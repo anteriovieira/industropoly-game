@@ -556,7 +556,7 @@ function SectorGroup({ state, group }: { state: GameState; group: PlayerSectorGr
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {group.tiles.length}/{group.sectorTotal} casas
+            {group.tiles.length}/{group.sectorTotal} propriedades
           </span>
         </div>
       </header>

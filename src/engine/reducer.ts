@@ -351,15 +351,19 @@ function handleAckModal(state: GameState): GameState {
   }
 
   if (m.kind === 'tile-info') {
-    // Simple acknowledgment, no side effect
-    const needsMore = !state.pendingLandingResolved;
-    return {
-      ...state,
-      modal: null,
-      // If we were waiting on a purchase decision, leave pendingLandingResolved=false;
-      // the user must then choose Buy/Decline to progress.
-      pendingLandingResolved: needsMore ? state.pendingLandingResolved : true,
-    };
+    // If this tile-info came from a landing (awaiting-land-action with the
+    // landing still unresolved), acknowledging it counts as declining the
+    // purchase — otherwise the GameScreen auto-dispatcher re-enters
+    // RESOLVE_LANDING and re-opens this same modal in a loop.
+    if (state.turnPhase === 'awaiting-land-action' && !state.pendingLandingResolved) {
+      return {
+        ...state,
+        modal: null,
+        pendingLandingResolved: true,
+        turnPhase: 'awaiting-end-turn',
+      };
+    }
+    return { ...state, modal: null };
   }
 
   if (m.kind === 'card') {

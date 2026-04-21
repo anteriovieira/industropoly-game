@@ -1,18 +1,21 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Text } from '@react-three/drei';
-import { BOARD, colors } from '@/ui/theme';
+import { BOARD, colors, PLAYER_COLORS } from '@/ui/theme';
 import { getParchmentTexture } from '@/assets/parchment';
 import { TILES } from '@/content/tiles';
 import { TileMesh } from './TileMesh';
 import { anchorForTile, boardStep } from './layout';
 import { NewspaperPanel } from './NewspaperPanel';
 import { reportToLogBridge } from '@/lib/logBridge';
+import { useGameStore } from '@/state/gameStore';
 
 export function Board() {
   const parchment = useMemo(() => getParchmentTexture(1024), []);
   const step = boardStep();
   const innerSize = BOARD.size - step * 2;
+  const tiles = useGameStore((s) => s.state?.tiles);
+  const players = useGameStore((s) => s.state?.players);
 
   useEffect(() => {
     reportToLogBridge('info', 'board-mounted', {
@@ -82,7 +85,22 @@ export function Board() {
       {/* Tiles */}
       {TILES.map((t) => {
         const a = anchorForTile(t.id);
-        return <TileMesh key={t.id} tile={t} anchor={a} />;
+        const own = tiles?.[t.id];
+        let ownerColor: string | null = null;
+        if (own?.owner && players) {
+          const idx = players.findIndex((p) => p.id === own.owner);
+          ownerColor = PLAYER_COLORS[idx] ?? null;
+        }
+        return (
+          <TileMesh
+            key={t.id}
+            tile={t}
+            anchor={a}
+            ownerColor={ownerColor}
+            tier={own?.tier ?? 0}
+            mortgaged={!!own?.mortgaged}
+          />
+        );
       })}
     </group>
   );
