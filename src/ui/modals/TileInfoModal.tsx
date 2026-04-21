@@ -5,19 +5,21 @@ import { getTile } from '@/content/tiles';
 import { sectorPalette } from '@/ui/theme';
 import { activePlayer } from '@/engine/selectors';
 
-export function TileInfoModal({ tileId }: { tileId: number }) {
+export function TileInfoModal({ tileId, readOnly = false }: { tileId: number; readOnly?: boolean }) {
   const state = useGameStore((s) => s.state)!;
   const dispatch = useGameStore((s) => s.dispatch);
   const tile = getTile(tileId);
   const owner = state.tiles[tileId]?.owner ?? null;
   const p = activePlayer(state);
   const canBuy =
+    !readOnly &&
     !owner &&
     (tile.role === 'industry' || tile.role === 'transport' || tile.role === 'utility') &&
     p.cash >= tile.price &&
     !state.pendingLandingResolved;
 
   const canUpgrade =
+    !readOnly &&
     tile.role === 'industry' &&
     owner === p.id &&
     (state.tiles[tileId]?.tier ?? 0) < 5 &&

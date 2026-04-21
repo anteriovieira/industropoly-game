@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useGameStore } from '@/state/gameStore';
@@ -6,11 +6,13 @@ import { anchorForTile, tokenSlot } from '../layout';
 import { HOP_DURATION_MS } from '../animTiming';
 import { Token } from './tokenParts';
 import { audio } from '@/lib/audio';
-import type { Player } from '@/engine/types';
+import type { Player, PlayerId } from '@/engine/types';
 
 const PLAYER_COLORS = ['#8a2a1b', '#1f3e52', '#5a2a68', '#6b8e4e'];
 const REDUCED_MOTION =
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+const CELEBRATE_DURATION_MS = 1300; // ≤ 1.5s per spec
 
 export function Tokens() {
   const state = useGameStore((s) => s.state);
@@ -32,12 +34,21 @@ interface Waypoint {
 
 function PlayerToken({ player, slot, color }: { player: Player; slot: number; color: string }) {
   const group = useRef<THREE.Group>(null);
+  const inner = useRef<THREE.Group>(null);
+  const steamRef = useRef<THREE.Group>(null);
   const pathRef = useRef<Waypoint[]>([]);
-  const segmentStartRef = useRef<number>(0); // ms timestamp
+  const segmentStartRef = useRef<number>(0);
   const fromRef = useRef<Waypoint | null>(null);
   const lastKnownPos = useRef(player.position);
+  const celebrateUntilRef = useRef<number>(0);
 
-  // Initial position: place immediately when mounted.
+  // Count of tiles this player owns — used to detect a new purchase.
+  const ownedCount = useGameStore((s) =>
+    countOwned(s.state?.tiles ?? {}, player.id),
+  );
+  const prevOwnedRef = useRef<number>(ownedCount);
+
+  // Initial position.
   useEffect(() => {
     if (!group.current) return;
     const a = anchorForTile(player.position);
@@ -73,41 +84,124 @@ function PlayerToken({ player, slot, color }: { player: Player; slot: number; co
     lastKnownPos.current = player.position;
   }, [player.position, slot]);
 
-  useFrame(() => {
-    if (!group.current) return;
-    const path = pathRef.current;
-    if (path.length === 0) return;
-    const next = path[0];
-    const from = fromRef.current;
-    if (!next || !from) return;
-    const dur = HOP_DURATION_MS;
-    const elapsed = performance.now() - segmentStartRef.current;
-    const t = Math.min(1, elapsed / dur);
-    const x = from.x + (next.x - from.x) * t;
-    const z = from.z + (next.z - from.z) * t;
-    const hop = Math.sin(t * Math.PI) * 0.35;
-    group.current.position.set(x, 0.15 + hop, z);
-    // Face direction of travel
-    const dx = next.x - from.x;
-    const dz = next.z - from.z;
-    if (dx !== 0 || dz !== 0) group.current.rotation.y = Math.atan2(dx, dz);
+  // Trigger celebration when this player's owned-tiles count increases.
+  // Under reduced-motion, skip the visual flourish entirely (the audio cue from
+  // `audioSideEffects` still plays, so the acquisition is still felt).
+  useEffect(() => {
+    if (ownedCount > prevOwnedRef.current && !REDUCED_MOTION) {
+      celebrateUntilRef.current = performance.now() + CELEBRATE_DURATION_MS;
+    }
+    prevOwnedRef.current = ownedCount;
+  }, [ownedCount]);
 
-    if (t >= 1) {
-      fromRef.current = next;
-      path.shift();
-      pathRef.current = path;
-      segmentStartRef.current = performance.now();
-      // Play a soft hop on each tile arrival (but not the last step, which is
-      // followed by the landing resolution sounds).
-      if (path.length > 0) audio.play('hop');
+  useFrame(() => {
+    const g = group.current;
+    if (!g) return;
+
+    // Progress along the movement path, if any.
+    const path = pathRef.current;
+    const from = fromRef.current;
+    if (path.length > 0 && from) {
+      const next = path[0];
+      if (next) {
+        const dur = HOP_DURATION_MS;
+        const elapsed = performance.now() - segmentStartRef.current;
+        const t = Math.min(1, elapsed / dur);
+        const x = from.x + (next.x - from.x) * t;
+        const z = from.z + (next.z - from.z) * t;
+        const hop = Math.sin(t * Math.PI) * 0.35;
+        g.position.set(x, 0.15 + hop, z);
+        const dx = next.x - from.x;
+        const dz = next.z - from.z;
+        if (dx !== 0 || dz !== 0) g.rotation.y = Math.atan2(dx, dz);
+
+        if (t >= 1) {
+          fromRef.current = next;
+          path.shift();
+          pathRef.current = path;
+          segmentStartRef.current = performance.now();
+          if (path.length > 0) audio.play('hop');
+        }
+      }
+    }
+
+    // Celebration overlay — big hop + spin + steam puff, applied on top of the
+    // current position (does NOT fight the pathing math because it lives on the
+    // inner group).
+    const now = performance.now();
+    const remaining = celebrateUntilRef.current - now;
+    const celebrating = remaining > 0;
+    if (inner.current) {
+      if (celebrating) {
+        const t = 1 - remaining / CELEBRATE_DURATION_MS; // 0 → 1
+        const jumpHeight = Math.sin(t * Math.PI) * 0.9; // up and back down
+        inner.current.position.y = jumpHeight;
+        inner.current.rotation.y = t * Math.PI * 2; // full spin
+      } else {
+        inner.current.position.y = 0;
+        inner.current.rotation.y = 0;
+      }
+    }
+    if (steamRef.current) {
+      steamRef.current.visible = celebrating;
+      if (celebrating) {
+        const t = 1 - remaining / CELEBRATE_DURATION_MS;
+        steamRef.current.position.y = 0.6 + t * 1.2;
+        const scale = 0.4 + t * 0.9;
+        steamRef.current.scale.setScalar(scale);
+        const puffs = steamRef.current.children as THREE.Mesh[];
+        for (const m of puffs) {
+          const mat = m.material as THREE.MeshBasicMaterial;
+          mat.opacity = Math.max(0, 0.55 * (1 - t));
+        }
+      }
     }
   });
 
   return (
     <group ref={group}>
-      <Token kind={player.token} color={color} scale={1.05} animate={!REDUCED_MOTION} />
+      <group ref={inner}>
+        <Token kind={player.token} color={color} scale={1.05} animate={!REDUCED_MOTION} />
+      </group>
+      <SteamPuff ref={steamRef} />
     </group>
   );
+}
+
+// A small cluster of three translucent puff spheres. Hidden until celebrating.
+const SteamPuff = forwardRef<THREE.Group>(function SteamPuff(_props, ref) {
+  const mats = useMemo(
+    () =>
+      [0, 1, 2].map(
+        () =>
+          new THREE.MeshBasicMaterial({
+            color: '#f5e7c2',
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+          }),
+      ),
+    [],
+  );
+  return (
+    <group ref={ref} visible={false} position={[0, 0.6, 0]}>
+      <mesh material={mats[0]} position={[0, 0, 0]}>
+        <sphereGeometry args={[0.18, 12, 10]} />
+      </mesh>
+      <mesh material={mats[1]} position={[0.15, 0.08, 0.02]}>
+        <sphereGeometry args={[0.14, 12, 10]} />
+      </mesh>
+      <mesh material={mats[2]} position={[-0.13, 0.12, -0.04]}>
+        <sphereGeometry args={[0.13, 12, 10]} />
+      </mesh>
+    </group>
+  );
+});
+
+function countOwned(tiles: Record<number, { owner: PlayerId | null }>, id: PlayerId): number {
+  let n = 0;
+  for (const k in tiles) if (tiles[k]!.owner === id) n += 1;
+  return n;
 }
 
 function stepsBetween(from: number, to: number): number[] {

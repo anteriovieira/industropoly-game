@@ -133,7 +133,7 @@ export type TurnPhase =
   | 'game-over';
 
 export type ModalRequest =
-  | { kind: 'tile-info'; tileId: TileId }
+  | { kind: 'tile-info'; tileId: TileId; readOnly?: boolean }
   | { kind: 'card'; cardId: string }
   | { kind: 'rent'; tileId: TileId; owed: number }
   | { kind: 'tax'; tileId: TileId; owed: number }
@@ -186,6 +186,7 @@ export type Action =
   | { type: 'RESOLVE_MOVEMENT' }
   | { type: 'RESOLVE_LANDING' }
   | { type: 'ACK_MODAL' } // close current info/rent/tax/card modal after effect applied
+  | { type: 'OPEN_TILE_INFO'; tileId: TileId } // inspect a tile (read-only, no side effects)
   | { type: 'BUY_TILE' }
   | { type: 'DECLINE_BUY' }
   | { type: 'UPGRADE_TILE'; tileId: TileId }

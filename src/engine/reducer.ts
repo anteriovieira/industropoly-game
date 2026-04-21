@@ -47,6 +47,8 @@ export function reducer(state: GameState, action: Action): GameState {
       return handleResolveLanding(state);
     case 'ACK_MODAL':
       return handleAckModal(state);
+    case 'OPEN_TILE_INFO':
+      return handleOpenTileInfo(state, action.tileId);
     case 'BUY_TILE':
       return handleBuyTile(state);
     case 'DECLINE_BUY':
@@ -304,6 +306,18 @@ function handleAckModal(state: GameState): GameState {
   }
 
   return { ...state, modal: null };
+}
+
+// OPEN_TILE_INFO ----------------------------------------------------------
+// Read-only inspection. Only opens when no other modal is active, and only in
+// "safe" phases so it cannot interrupt a landing/card flow.
+
+function handleOpenTileInfo(state: GameState, tileId: TileId): GameState {
+  if (state.modal) return state;
+  if (tileId < 0 || tileId >= 40 || !Number.isInteger(tileId)) return state;
+  const safe: ReadonlyArray<GameState['turnPhase']> = ['awaiting-roll', 'awaiting-end-turn'];
+  if (!safe.includes(state.turnPhase)) return state;
+  return { ...state, modal: { kind: 'tile-info', tileId, readOnly: true } };
 }
 
 // BUY_TILE / DECLINE_BUY --------------------------------------------------

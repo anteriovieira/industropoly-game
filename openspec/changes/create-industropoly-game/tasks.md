@@ -82,7 +82,7 @@
 - [x] 9.2 Build `IntroScreen` with narrative copy (Manchester 1785 framing) and a "Begin" button
 - [x] 9.3 Build `SetupScreen` with player count selector (2–4), name inputs, token picker with unique-token validation
 - [x] 9.4 Build `SummaryScreen` with winner, final standings, and full Facts Journal recap grouped by category
-- [x] 9.5 Wire keyboard shortcuts at the app root (Space = roll, B = buy, U = upgrade, E = end turn, I = open info, J = journal, Esc = close modal) — Space, E, B, J, Esc wired; U/I to be added as refinements
+- [x] 9.5 Wire keyboard shortcuts at the app root (Space = roll, B = buy, U = upgrade, E = end turn, I = open info, J = journal, Esc = close modal) — Space, E, B, I, J, C (center camera), Esc wired; U remains a future refinement
 
 ## 10. 3D board scene
 
@@ -103,7 +103,7 @@
 - [x] 11.3 Compute per-tile multi-slot anchor positions (up to 4 tokens per tile without full occlusion)
 - [x] 11.4 Implement movement animation: derive waypoint polyline from current → target tile indices, tween position via `@react-spring/three`, rotate to face direction per segment — implemented with a custom `useFrame` tween that hops between tiles (simpler and more reliable than `@react-spring/three` in this codebase)
 - [x] 11.5 Implement corner-turn rotation snap so the token faces the new edge before continuing — token rotates toward its next waypoint via `atan2(dx, dz)`, which handles corners automatically
-- [ ] 11.6 Implement celebration animation (≤ 1.5 s hop / steam puff) on `BUY_TILE` dispatch for the acting token — deferred polish; hop-on-move already exists
+- [x] 11.6 Implement celebration animation (≤ 1.5 s hop / steam puff) on `BUY_TILE` dispatch for the acting token — token jumps 0.9 u, spins 360°, releases a three-puff steam cluster that rises and fades; detected from the store by watching each player's owned-tile count (no engine pollution)
 - [x] 11.7 Add a token-preview thumbnail rendering each token in a small off-screen scene for the setup screen
 
 ## 12. 3D dice
@@ -126,7 +126,7 @@
 
 - [x] 14.1 On every `RESOLVE_LANDING`, open `TileInfoModal` or `CardModal` before allowing `END_TURN`
 - [x] 14.2 Append newly-seen educational payloads to `state.factsJournal` (deduped by tile/card id)
-- [ ] 14.3 Add "Info" control on HUD that opens the current tile's modal with no side effects — deferred; Journal is wired, per-tile inspection not yet surfaced on the HUD
+- [x] 14.3 Add "Info" control on HUD that opens the current tile's modal with no side effects — new `OPEN_TILE_INFO` action + `readOnly` flag on `tile-info` modals suppresses Buy/Upgrade; HUD button + `I` keyboard shortcut
 
 ## 15. Accessibility & responsive behavior
 

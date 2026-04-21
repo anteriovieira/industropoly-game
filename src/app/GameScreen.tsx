@@ -76,6 +76,9 @@ export function GameScreen() {
         setJournalOpen(true);
       } else if (e.key.toLowerCase() === 'c') {
         useUiStore.getState().resetCamera();
+      } else if (e.key.toLowerCase() === 'i') {
+        const active = activePlayer(state);
+        dispatch({ type: 'OPEN_TILE_INFO', tileId: active.position });
       } else if (e.key === 'Escape' && journalOpen) {
         setJournalOpen(false);
       }
@@ -95,7 +98,9 @@ export function GameScreen() {
       </div>
       <Hud />
       <CameraHint />
-      {m?.kind === 'tile-info' && <TileInfoModal tileId={m.tileId} />}
+      {m?.kind === 'tile-info' && (
+        <TileInfoModal tileId={m.tileId} readOnly={m.readOnly ?? false} />
+      )}
       {m?.kind === 'card' && <CardModal cardId={m.cardId} />}
       {m?.kind === 'rent' && <RentModal tileId={m.tileId} owed={m.owed} />}
       {m?.kind === 'tax' && <TaxModal tileId={m.tileId} owed={m.owed} />}

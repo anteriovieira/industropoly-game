@@ -30,6 +30,7 @@ export function Hud() {
   const canResolveMove = phase === 'moving';
   const canLand = phase === 'awaiting-land-action';
   const canEnd = phase === 'awaiting-end-turn' && state.pendingLandingResolved;
+  const canInfo = (phase === 'awaiting-roll' || phase === 'awaiting-end-turn') && !state.modal;
 
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
@@ -121,6 +122,17 @@ export function Hud() {
         </button>
         <button disabled={!canLand} onClick={() => dispatch({ type: 'RESOLVE_LANDING' })}>
           Resolver casa
+        </button>
+        <button
+          disabled={!canInfo}
+          onClick={() => {
+            audio.play('click');
+            dispatch({ type: 'OPEN_TILE_INFO', tileId: active.position });
+          }}
+          aria-label="Ver casa atual (I)"
+          title="Ver casa atual (I)"
+        >
+          Info (I)
         </button>
         <button
           onClick={() => {
