@@ -46,15 +46,16 @@ openspec/     Specs and change proposals (source of truth for requirements)
 
 ## How the game teaches
 
-Every tile and every card carries a short, sourced historical blurb. When a player's token lands on a tile, the game shows a **multiple-choice question** drawn from that tile's content before the rule (buy offer, rent, tax, card draw) runs:
+Every tile and every card carries a short, sourced historical blurb. The quiz now gates **movement**, not landing: when you roll the dice, if you're parked on a real tile (industry, transport, utility, tax, card-draw), a **multiple-choice question** about that tile pops up *before* your token moves:
 
-- **Right answer** → the rule resolves normally and the player keeps acting on the tile.
-- **Wrong answer** → the tile's rule is skipped and the turn ends. No buy offer, no rent collected, no card drawn.
+- **Right answer** → your token advances by the dice roll, and the landing rule (buy offer, rent, tax, card draw) resolves normally at the destination.
+- **Wrong answer** → you stay parked on the same tile, your turn ends, and the dice are discarded. No movement, no rent, no card.
 - **Loja de Dicas** → mid-quiz, the player can spend cash to eliminate a wrong option, reveal a clue sentence, or expose the first letter of the correct answer. Hints are content-authored per question.
+- **Corner tiles** (Início, Praça Pública, Visitando Prisão) have no questions, so rolling on a corner — including everyone's first turn at Manchester — moves the token without a quiz.
 
-After every answer the game shows a **"Você sabia?"** panel with the tile's full historical blurb and source — the teach moment lands with the answer in mind. The HUD's **Info (I)** button still opens the standalone tile-info modal for out-of-turn browsing (no quiz). A per-game **Facts Journal** records every question seen and whether it was answered correctly. The end-of-game recap shows per-player quiz stats (acertos / erros / dicas / £ gastas em dicas) alongside the journal. See `openspec/changes/add-tile-quiz-gameplay/specs/tile-quiz-gameplay/spec.md` for the behavioral contract.
+After every answer the game shows a **"Lembrete"** panel with the parked tile's full historical blurb and source — you've been here, this is what you saw. The HUD's **Info (I)** button still opens the standalone tile-info modal for out-of-turn browsing (no quiz). A per-game **Facts Journal** records every question seen and whether it was answered correctly. The end-of-game recap shows per-player quiz stats (acertos / erros / dicas / £ gastas em dicas) alongside the journal.
 
-At the **center of the 3D board** a faded sepia "letter" rotates one story per turn, so non-active players have something to read while waiting. The story is drawn from the same tile/card blurb corpus (no separate authoring), excludes the tile tied to the current or most recent quiz so it never becomes a cheat sheet, and is also exposed via the HUD's **📜 História (H)** button, which opens a fully readable, screen-reader-friendly modal. See `openspec/changes/add-board-center-story/specs/board-center-story/spec.md`.
+At the **center of the 3D board** a denser newspaper called **"O Cronista Industrial"** rotates one new edition per turn, laid out as a **3-column framed front page**: masthead with horizontal rule, edition line, a full-width lead headline, and 5 secondary items in a 3-column grid underneath. The 6 headlines per issue are drawn from the same tile/card blurb corpus (no separate authoring) and **deliberately overlap with the quiz corpus** — keeping up with the paper between turns is your ambient cheat sheet. The HUD's **📰 Jornal (H)** button opens a screen-reader-friendly modal listing every headline of the current edition with full body and citation.
 
 ### Adding a question
 

@@ -1,9 +1,9 @@
 import type { GameState, Player, PlayerId, TileOwnership, TokenKind } from './types';
-import { normalizeSeed, nextUint32, shuffle } from './rng';
+import { normalizeSeed, shuffle } from './rng';
+import { pickIssue } from './reducer';
 import { TILES } from '@/content/tiles';
 import { INVENTION_CARDS } from '@/content/invention-cards';
 import { EDICT_CARDS } from '@/content/edict-cards';
-import { STORIES } from '@/content/stories';
 
 export interface InitialPlayerInput {
   name: string;
@@ -31,9 +31,9 @@ export function createInitialState(players: InitialPlayerInput[], seed: number):
   const s1 = shuffle(inventionIds, rngSeed);
   const s2 = shuffle(edictIds, s1.state);
 
-  // Seed the initial story from the same RNG so replays match.
-  const s3 = nextUint32(s2.state);
-  const initialStoryId = STORIES.length > 0 ? STORIES[s3.value % STORIES.length]!.id : null;
+  // Seed the first newspaper issue from the same RNG so replays match.
+  const issue = pickIssue(s2.state, 6);
+  const initialNewspaper = { issueNumber: 1, headlineIds: issue.ids };
 
   const playerList: Player[] = players.map((p, i) => ({
     id: PLAYER_IDS[i]!,
@@ -57,7 +57,7 @@ export function createInitialState(players: InitialPlayerInput[], seed: number):
   return {
     schemaVersion: 2,
     seed: rngSeed,
-    rngState: s3.state,
+    rngState: issue.state,
     turn: 1,
     activePlayerIndex: 0,
     turnPhase: 'awaiting-roll',
@@ -73,7 +73,7 @@ export function createInitialState(players: InitialPlayerInput[], seed: number):
     pendingCardId: null,
     pendingLandingResolved: false,
     currentQuiz: null,
-    currentStoryId: initialStoryId,
+    currentNewspaper: initialNewspaper,
     lastResolvedTileId: null,
     factsJournal: [],
     winner: null,

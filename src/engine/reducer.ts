@@ -176,6 +176,15 @@ function handleRoll(state: GameState): GameState {
     return { ...s, lastRoll: null, turnPhase: 'awaiting-end-turn' };
   }
 
+  // Quiz now gates MOVEMENT, not landing. If the active player is parked on a
+  // tile with an authored question, enter the quiz before the token moves.
+  // Corners (no questions) and tiles with no authored question fall through
+  // to `moving` so the existing animation pipeline runs unchanged.
+  const currentTile = TILE_INDEX[selActive(s).position]!;
+  if (currentTile.role !== 'corner' && (QUESTIONS[currentTile.id]?.length ?? 0) > 0) {
+    return startQuizForCurrentTile(s, currentTile.id);
+  }
+
   return s;
 }
 
@@ -196,11 +205,10 @@ function handleResolveMovement(state: GameState): GameState {
   let s = updateActivePlayer(state, (pl) => ({ ...pl, position: pos, cash: pl.cash + cashDelta }));
   if (cashDelta > 0) s = appendLog(s, `${p.name} passou pelo Início e recebeu £${cashDelta}.`);
 
-  // Record this landing so the next END_TURN's story rotation excludes it.
+  // Track the landed tile (consumed by future features; not used by routing).
   s = { ...s, lastResolvedTileId: pos };
 
-  // Go-to-prison is a movement consequence, not a tile rule — apply it before
-  // any quiz phase and end the turn.
+  // Go-to-prison is a movement consequence, not a tile rule — apply and end.
   const tile = TILE_INDEX[pos]!;
   if (tile.role === 'corner' && tile.corner === 'go-to-prison') {
     s = sendActiveToPrison(s, 'flagrado por fraude');
@@ -208,26 +216,24 @@ function handleResolveMovement(state: GameState): GameState {
     return { ...s, turnPhase: 'awaiting-end-turn', pendingLandingResolved: true };
   }
 
-  // Corner tiles with no rule skip the quiz entirely.
-  if (!tileNeedsQuiz(tile)) {
+  // Other corners (Início, Praça, Visitando Prisão): no rule, just end turn.
+  if (tile.role === 'corner') {
     s = recordTileFact(s, pos);
     return { ...s, turnPhase: 'awaiting-end-turn', pendingLandingResolved: true };
   }
 
-  // Gate the tile's rule behind a quiz.
-  return startQuizForTile(s, pos);
+  // Quiz already happened (or was skipped) before movement. Resolve the
+  // landing's gameplay rule directly.
+  return { ...s, turnPhase: 'awaiting-land-action' };
 }
 
-function tileNeedsQuiz(tile: Tile): boolean {
-  return tile.role !== 'corner';
-}
-
-function startQuizForTile(state: GameState, tileId: TileId): GameState {
+// Called from `handleRoll` against the player's CURRENT position. Picks a
+// question for that tile via the rng. If the tile has no authored question
+// (defensive — `handleRoll` already short-circuits this case) the caller's
+// `moving` phase is preserved.
+function startQuizForCurrentTile(state: GameState, tileId: TileId): GameState {
   const questions = QUESTIONS[tileId] ?? [];
-  if (questions.length === 0) {
-    // No content — fall back to direct landing so content gaps don't block play.
-    return { ...state, turnPhase: 'awaiting-land-action' };
-  }
+  if (questions.length === 0) return state; // already in `moving`
   const draw = drawQuestionIndex(state.rngState, questions.length);
   const q = questions[draw.index]!;
   const quiz: CurrentQuiz = {
@@ -424,19 +430,19 @@ function handleAnswerQuestion(state: GameState, optionId: string): GameState {
   );
 
   if (correct) {
-    // Clear quiz, unlock the tile rule.
-    s = { ...s, currentQuiz: null, turnPhase: 'awaiting-land-action' };
-    return handleResolveLanding(s);
+    // Quiz passed — release the token to move. GameScreen auto-dispatches
+    // RESOLVE_MOVEMENT once turnPhase enters `moving`.
+    return { ...s, currentQuiz: null, turnPhase: 'moving' };
   }
 
-  // Wrong answer: skip the tile rule entirely. Turn ends.
-  // Reset doublesStreak so END_TURN does not grant another roll even if the
-  // player rolled doubles this turn.
+  // Wrong answer: token stays parked. Clear lastRoll so no movement animation
+  // fires, and reset doublesStreak so a doubles roll doesn't grant another go.
   s = updateActivePlayer(s, (pl) => ({ ...pl, doublesStreak: 0 }));
   return {
     ...s,
     currentQuiz: null,
     turnPhase: 'awaiting-end-turn',
+    lastRoll: null,
     pendingLandingResolved: true,
     modal: null,
   };
@@ -514,19 +520,29 @@ export function drawQuestionIndex(rngState: number, count: number): { state: num
   return { state: r.state, index };
 }
 
-// Pick the next story id, excluding the supplied set. Falls back to the full
-// corpus only when exclusions empty the candidate list (corpus is large enough
-// in practice that this never happens). Pure — advances rng deterministically.
-export function pickStoryId(
+// Pick a newspaper issue: `count` distinct story ids, drawn uniformly from
+// STORIES while skipping any id in `avoid`. Pure — advances rng once per
+// successful draw. Falls back to the full corpus if `avoid` empties the pool.
+export function pickIssue(
   rngState: number,
-  exclude: ReadonlySet<string>,
-): { state: number; storyId: string | null } {
-  if (STORIES.length === 0) return { state: rngState, storyId: null };
-  const candidates = STORIES.filter((s) => !exclude.has(s.id) && !exclude.has(s.sourceRefId));
-  const pool = candidates.length > 0 ? candidates : STORIES;
-  const r = nextUint32(rngState);
-  const story = pool[r.value % pool.length]!;
-  return { state: r.state, storyId: story.id };
+  count: number,
+  avoid: ReadonlySet<string> = new Set(),
+): { state: number; ids: string[] } {
+  if (STORIES.length === 0 || count <= 0) return { state: rngState, ids: [] };
+  const filtered = STORIES.filter((s) => !avoid.has(s.id));
+  const pool = filtered.length >= count ? filtered : STORIES;
+  const ids: string[] = [];
+  let s = rngState;
+  // Bounded retry per draw: with 65+ candidates and at most 3 picks, this
+  // always finds a non-duplicate within a handful of attempts.
+  while (ids.length < count) {
+    const r = nextUint32(s);
+    s = r.state;
+    const candidate = pool[r.value % pool.length]!.id;
+    if (ids.includes(candidate)) continue; // try again, advancing rng each retry
+    ids.push(candidate);
+  }
+  return { state: s, ids };
 }
 
 // UPGRADE_TILE ------------------------------------------------------------
@@ -805,20 +821,23 @@ function handleEndTurn(state: GameState): GameState {
   if (!state.pendingLandingResolved && state.turnPhase !== 'awaiting-end-turn') return state;
   const p = selActive(state);
 
-  // Compute the next story shared between both branches (re-roll on doubles
-  // and rotation to next player). Both are "successful" END_TURN paths.
-  const exclude = new Set<string>();
-  if (state.currentStoryId) exclude.add(state.currentStoryId);
-  if (state.currentQuiz) exclude.add(`tile:${state.currentQuiz.tileId}`);
-  if (state.lastResolvedTileId != null) exclude.add(`tile:${state.lastResolvedTileId}`);
-  const story = pickStoryId(state.rngState, exclude);
+  // Rotate the newspaper. Avoid the previous issue's headlines so back-to-back
+  // duplication is minimised. Quiz-related exclusions are intentionally NOT
+  // applied — overlap with the quiz corpus is the new ambient-hint mechanism.
+  const prevIssue = state.currentNewspaper;
+  const avoid = new Set<string>(prevIssue?.headlineIds ?? []);
+  const issue = pickIssue(state.rngState, 6, avoid);
+  const nextNewspaper = {
+    issueNumber: (prevIssue?.issueNumber ?? 0) + 1,
+    headlineIds: issue.ids,
+  };
 
   if (state.lastRoll?.doubles && !p.inPrison && p.doublesStreak > 0 && p.doublesStreak < 3) {
     // Another roll for the same player.
     return {
       ...state,
-      rngState: story.state,
-      currentStoryId: story.storyId,
+      rngState: issue.state,
+      currentNewspaper: nextNewspaper,
       lastResolvedTileId: null,
       turnPhase: 'awaiting-roll',
       lastRoll: null,
@@ -836,8 +855,8 @@ function handleEndTurn(state: GameState): GameState {
 
   let s: GameState = {
     ...state,
-    rngState: story.state,
-    currentStoryId: story.storyId,
+    rngState: issue.state,
+    currentNewspaper: nextNewspaper,
     lastResolvedTileId: null,
     activePlayerIndex: nextIdx,
     turn: state.turn + 1,

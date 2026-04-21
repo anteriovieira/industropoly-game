@@ -6,7 +6,7 @@ import { getParchmentTexture } from '@/assets/parchment';
 import { TILES } from '@/content/tiles';
 import { TileMesh } from './TileMesh';
 import { anchorForTile, boardStep } from './layout';
-import { StoryPanel } from './StoryPanel';
+import { NewspaperPanel } from './NewspaperPanel';
 
 export function Board() {
   const parchment = useMemo(() => getParchmentTexture(1024), []);
@@ -62,8 +62,8 @@ export function Board() {
         A Era do Vapor
       </Text>
 
-      {/* Ambient story panel — faded "handwritten letter" at the geometric center. */}
-      <StoryPanel innerSize={innerSize} />
+      {/* Ambient newspaper panel — three legible headlines at the board center. */}
+      <NewspaperPanel innerSize={innerSize} />
 
       {/* Tiles */}
       {TILES.map((t) => {

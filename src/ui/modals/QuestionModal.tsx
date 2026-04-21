@@ -52,7 +52,7 @@ export function QuestionModal() {
           <button
             className="primary"
             onClick={() => {
-              audio.play(correct ? 'click' : 'click');
+              audio.play('click');
               dispatch({ type: 'ANSWER_QUESTION', optionId: submitted });
             }}
           >
@@ -61,9 +61,7 @@ export function QuestionModal() {
         }
       >
         <p style={{ margin: '0 0 10px', fontWeight: 600 }}>
-          {correct
-            ? 'Você pode prosseguir com a regra da casa.'
-            : 'Seu turno será encerrado sem ação na casa.'}
+          {correct ? 'Sua peça avança.' : 'Você fica parado neste turno.'}
         </p>
         <div
           style={{
@@ -74,7 +72,7 @@ export function QuestionModal() {
           }}
         >
           <div style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: 4 }}>
-            Você sabia?
+            Lembrete
           </div>
           <strong>{tile.education.title}</strong> — <em>{tile.education.date}</em>
           <p style={{ margin: '6px 0' }}>{tile.education.blurb}</p>
@@ -114,9 +112,16 @@ export function QuestionModal() {
         </button>
       }
     >
-      <div style={{ fontSize: '0.9rem', opacity: 0.75, marginBottom: 8 }}>
-        Acerte para seguir com a regra da casa. Errar encerra o turno.
-      </div>
+      <p
+        style={{
+          fontStyle: 'italic',
+          fontSize: '0.85rem',
+          opacity: 0.7,
+          margin: '0 0 8px',
+        }}
+      >
+        O Cronista pergunta:
+      </p>
 
       <p style={{ fontWeight: 600, marginBottom: 12 }}>{question.prompt}</p>
 

@@ -21,10 +21,16 @@ export function parseSave(raw: string | null): LoadResult {
       return { state: null, notice: 'Formato de save atualizado — começando um novo jogo.' };
     }
     // Hydrate fields added after the schemaVersion was minted (additive, no
-    // schema bump). Saves predating add-board-center-story lack these.
-    const hydrated = parsed as GameState & { currentStoryId?: unknown; lastResolvedTileId?: unknown };
-    if (hydrated.currentStoryId === undefined) hydrated.currentStoryId = null;
+    // schema bump). Saves predating evolve-story-to-newspaper lack
+    // currentNewspaper. Stale `currentStoryId` fields are dropped.
+    const hydrated = parsed as GameState & {
+      currentNewspaper?: unknown;
+      lastResolvedTileId?: unknown;
+      currentStoryId?: unknown;
+    };
+    if (hydrated.currentNewspaper === undefined) hydrated.currentNewspaper = null;
     if (hydrated.lastResolvedTileId === undefined) hydrated.lastResolvedTileId = null;
+    if ('currentStoryId' in hydrated) delete hydrated.currentStoryId;
     return { state: hydrated as GameState, notice: null };
   } catch {
     return { state: null, notice: 'Jogo salvo corrompido — começando um novo.' };

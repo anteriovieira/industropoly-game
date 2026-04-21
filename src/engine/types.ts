@@ -174,6 +174,14 @@ export interface CurrentQuiz {
   eliminatedOptionIds: string[]; // from eliminate-option hints
 }
 
+// A "newspaper issue" rendered at the board center. Headline ids reference
+// entries in `STORIES`. Length is currently 3 but kept as a list so a future
+// change can resize without touching the engine state shape.
+export interface Newspaper {
+  issueNumber: number;
+  headlineIds: string[];
+}
+
 export type ModalRequest =
   | { kind: 'tile-info'; tileId: TileId; readOnly?: boolean }
   | { kind: 'card'; cardId: string }
@@ -221,11 +229,12 @@ export interface GameState {
   // Live quiz shown during `awaiting-quiz-answer`. Null in any other phase.
   currentQuiz: CurrentQuiz | null;
 
-  // Ambient story panel rendered at the board center. Rotates on END_TURN.
-  // Null only on a cold-loaded save predating the board-center-story change.
-  currentStoryId: string | null;
-  // Tile id of the most recently resolved landing — used to exclude that tile
-  // from the next story rotation so the panel never doubles as a quiz hint.
+  // Ambient newspaper panel rendered at the board center. Rotates on END_TURN.
+  // Null only on a cold-loaded save predating the evolve-story-to-newspaper change.
+  currentNewspaper: Newspaper | null;
+  // Tile id of the most recently resolved landing. Kept for potential future
+  // consumers; the newspaper rotation no longer reads it (overlap with the
+  // quiz corpus is now intentional).
   lastResolvedTileId: TileId | null;
 
   factsJournal: JournalEntry[];

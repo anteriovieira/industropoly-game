@@ -154,10 +154,10 @@ export function Hud() {
             audio.play('click');
             setStoryOpen(true);
           }}
-          aria-label="Ler história atual (H)"
-          title="Ler história atual (H)"
+          aria-label="Ler edição atual do jornal (H)"
+          title="Ler edição atual do jornal (H)"
         >
-          📜 História (H)
+          📰 Jornal (H)
         </button>
         <button
           onClick={() => {
