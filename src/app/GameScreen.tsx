@@ -9,8 +9,16 @@ import { RentModal } from '@/ui/modals/RentModal';
 import { TaxModal } from '@/ui/modals/TaxModal';
 import { PrisonModal } from '@/ui/modals/PrisonModal';
 import { FactsJournal } from '@/ui/modals/FactsJournal';
+import { CameraHint } from '@/ui/CameraHint';
 import { activePlayer } from '@/engine/selectors';
 import { save } from '@/lib/persist';
+import { useGameAudio } from '@/lib/audioSideEffects';
+import {
+  DICE_TUMBLE_MS,
+  DICE_SETTLE_BUFFER_MS,
+  landingDelayMs,
+  prefersReducedMotion,
+} from '@/scene/animTiming';
 
 export function GameScreen() {
   const state = useGameStore((s) => s.state);
@@ -18,6 +26,7 @@ export function GameScreen() {
   const setPhase = useUiStore((s) => s.setPhase);
   const journalOpen = useUiStore((s) => s.journalOpen);
   const setJournalOpen = useUiStore((s) => s.setJournalOpen);
+  useGameAudio();
 
   // Autosave on state change
   useEffect(() => {
@@ -26,16 +35,23 @@ export function GameScreen() {
     if (state.status === 'game-over') setPhase('summary');
   }, [state, setPhase]);
 
-  // Auto-advance moving -> awaiting-land-action after a tick (dice animation time)
+  // Auto-advance the moving -> awaiting-land-action -> landing pipeline.
+  // The delays are tuned so the player actually *sees* the dice tumble and the
+  // token hop every tile before any modal appears on top of the scene.
   useEffect(() => {
     if (!state) return;
+    const reduced = prefersReducedMotion();
     if (state.turnPhase === 'moving') {
-      const t = setTimeout(() => dispatch({ type: 'RESOLVE_MOVEMENT' }), 1100);
+      // Wait for the dice tumble to settle before applying the movement to state.
+      const delay = reduced ? 200 : DICE_TUMBLE_MS + DICE_SETTLE_BUFFER_MS;
+      const t = setTimeout(() => dispatch({ type: 'RESOLVE_MOVEMENT' }), delay);
       return () => clearTimeout(t);
     }
     if (state.turnPhase === 'awaiting-land-action') {
-      // After a tiny settle delay, open landing modal.
-      const t = setTimeout(() => dispatch({ type: 'RESOLVE_LANDING' }), 650);
+      // Wait for the token to actually finish hopping across every tile.
+      const steps = state.lastRoll?.total ?? 0;
+      const delay = landingDelayMs(steps, reduced);
+      const t = setTimeout(() => dispatch({ type: 'RESOLVE_LANDING' }), delay);
       return () => clearTimeout(t);
     }
     return undefined;
@@ -58,6 +74,8 @@ export function GameScreen() {
         dispatch({ type: 'BUY_TILE' });
       } else if (e.key.toLowerCase() === 'j') {
         setJournalOpen(true);
+      } else if (e.key.toLowerCase() === 'c') {
+        useUiStore.getState().resetCamera();
       } else if (e.key === 'Escape' && journalOpen) {
         setJournalOpen(false);
       }
@@ -76,6 +94,7 @@ export function GameScreen() {
         <BoardScene />
       </div>
       <Hud />
+      <CameraHint />
       {m?.kind === 'tile-info' && <TileInfoModal tileId={m.tileId} />}
       {m?.kind === 'card' && <CardModal cardId={m.cardId} />}
       {m?.kind === 'rent' && <RentModal tileId={m.tileId} owed={m.owed} />}

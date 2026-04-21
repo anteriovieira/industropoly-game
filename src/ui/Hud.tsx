@@ -1,7 +1,9 @@
 import { useGameStore } from '@/state/gameStore';
 import { useUiStore } from '@/state/uiStore';
 import { Parchment } from './Parchment';
+import { MuteButton } from './MuteButton';
 import { activePlayer } from '@/engine/selectors';
+import { audio } from '@/lib/audio';
 import type { TurnPhase } from '@/engine/types';
 
 const PLAYER_COLORS = ['#8a2a1b', '#1f3e52', '#5a2a68', '#6b8e4e'];
@@ -20,6 +22,7 @@ export function Hud() {
   const state = useGameStore((s) => s.state)!;
   const dispatch = useGameStore((s) => s.dispatch);
   const setJournalOpen = useUiStore((s) => s.setJournalOpen);
+  const resetCamera = useUiStore((s) => s.resetCamera);
 
   const active = activePlayer(state);
   const phase = state.turnPhase;
@@ -119,7 +122,24 @@ export function Hud() {
         <button disabled={!canLand} onClick={() => dispatch({ type: 'RESOLVE_LANDING' })}>
           Resolver casa
         </button>
-        <button onClick={() => setJournalOpen(true)}>Diário (J)</button>
+        <button
+          onClick={() => {
+            audio.play('click');
+            setJournalOpen(true);
+          }}
+        >
+          Diário (J)
+        </button>
+        <button
+          onClick={() => {
+            audio.play('click');
+            resetCamera();
+          }}
+          aria-label="Centralizar câmera (C)"
+          title="Centralizar câmera (C)"
+        >
+          Centralizar (C)
+        </button>
         <button
           className="primary"
           disabled={!canEnd}
@@ -128,6 +148,7 @@ export function Hud() {
         >
           Encerrar turno (E)
         </button>
+        <MuteButton />
       </div>
 
       {active.inPrison && phase === 'awaiting-roll' && (

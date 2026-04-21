@@ -14,6 +14,8 @@ interface UiStore {
   setJournalOpen: (open: boolean) => void;
   notice: string | null;
   setNotice: (notice: string | null) => void;
+  cameraResetNonce: number;
+  resetCamera: () => void;
 }
 
 export const useUiStore = create<UiStore>((set) => ({
@@ -27,4 +29,6 @@ export const useUiStore = create<UiStore>((set) => ({
   setJournalOpen: (journalOpen) => set({ journalOpen }),
   notice: null,
   setNotice: (notice) => set({ notice }),
+  cameraResetNonce: 0,
+  resetCamera: () => set((s) => ({ cameraResetNonce: s.cameraResetNonce + 1 })),
 }));

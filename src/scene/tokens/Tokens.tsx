@@ -3,7 +3,9 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useGameStore } from '@/state/gameStore';
 import { anchorForTile, tokenSlot } from '../layout';
+import { HOP_DURATION_MS } from '../animTiming';
 import { Token } from './tokenParts';
+import { audio } from '@/lib/audio';
 import type { Player } from '@/engine/types';
 
 const PLAYER_COLORS = ['#8a2a1b', '#1f3e52', '#5a2a68', '#6b8e4e'];
@@ -78,7 +80,7 @@ function PlayerToken({ player, slot, color }: { player: Player; slot: number; co
     const next = path[0];
     const from = fromRef.current;
     if (!next || !from) return;
-    const dur = 220; // ms per tile hop
+    const dur = HOP_DURATION_MS;
     const elapsed = performance.now() - segmentStartRef.current;
     const t = Math.min(1, elapsed / dur);
     const x = from.x + (next.x - from.x) * t;
@@ -95,6 +97,9 @@ function PlayerToken({ player, slot, color }: { player: Player; slot: number; co
       path.shift();
       pathRef.current = path;
       segmentStartRef.current = performance.now();
+      // Play a soft hop on each tile arrival (but not the last step, which is
+      // followed by the landing resolution sounds).
+      if (path.length > 0) audio.play('hop');
     }
   });
 
