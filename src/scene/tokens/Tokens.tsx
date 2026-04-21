@@ -48,9 +48,13 @@ function PlayerToken({ player, slot, color }: { player: Player; slot: number; co
   );
   const prevOwnedRef = useRef<number>(ownedCount);
 
-  // Initial position.
+  // Snap to the starting tile only once on mount. Subsequent position changes
+  // are driven by the waypoint animation below — snapping here would teleport
+  // the token to the destination and the hop would then animate backwards.
+  const didInitRef = useRef(false);
   useEffect(() => {
-    if (!group.current) return;
+    if (didInitRef.current || !group.current) return;
+    didInitRef.current = true;
     const a = anchorForTile(player.position);
     const s = tokenSlot(a, slot);
     group.current.position.set(s.x, 0.15, s.z);
