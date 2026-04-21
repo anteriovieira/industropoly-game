@@ -26,14 +26,14 @@ export type SectorId =
 
 // Muted, era-appropriate palette. Each sector is distinct enough under sepia lighting.
 export const sectorPalette: Record<SectorId, { base: string; label: string }> = {
-  textiles: { base: '#7f9db9', label: 'Textiles' },
-  'coal-iron': { base: '#2b2b2b', label: 'Coal & Iron' },
-  shipyards: { base: '#1f3e52', label: 'Shipyards' },
-  chemicals: { base: '#6b8e4e', label: 'Chemicals' },
-  'railways-industries': { base: '#6a2d1f', label: 'Railway Works' },
-  publishing: { base: '#b88a3e', label: 'Publishing' },
-  banking: { base: '#1f5c3e', label: 'Banking' },
-  empire: { base: '#5a2a68', label: 'Empire Finance' },
+  textiles: { base: '#7f9db9', label: 'Têxteis' },
+  'coal-iron': { base: '#2b2b2b', label: 'Carvão e Ferro' },
+  shipyards: { base: '#1f3e52', label: 'Estaleiros' },
+  chemicals: { base: '#6b8e4e', label: 'Química' },
+  'railways-industries': { base: '#6a2d1f', label: 'Ferrovias' },
+  publishing: { base: '#b88a3e', label: 'Imprensa' },
+  banking: { base: '#1f5c3e', label: 'Bancos' },
+  empire: { base: '#5a2a68', label: 'Finanças Imperiais' },
 };
 
 // Per-player accent colors, indexed by player order (0..3).

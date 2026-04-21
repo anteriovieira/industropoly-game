@@ -44,6 +44,9 @@ export function QuestionModal() {
   // ---------- Result phase ----------
   if (submitted != null) {
     const correct = submitted === question.correctOptionId;
+    const correctText = question.options.find((o) => o.id === question.correctOptionId)?.text;
+    const accent = correct ? '#1f7a44' : '#a12a1f';
+    const accentSoft = correct ? 'rgba(31, 122, 68, 0.12)' : 'rgba(161, 42, 31, 0.12)';
     return (
       <Modal
         title={correct ? 'Resposta correta!' : 'Resposta incorreta'}
@@ -60,8 +63,38 @@ export function QuestionModal() {
           </button>
         }
       >
-        <p style={{ margin: '0 0 10px', fontWeight: 600 }}>
-          {correct ? 'Sua peça avança.' : 'Você fica parado neste turno.'}
+        <div
+          style={{
+            padding: '12px 14px',
+            border: `2px solid ${accent}`,
+            borderRadius: 8,
+            background: accentSoft,
+            marginBottom: 14,
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.8rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: accent,
+              fontWeight: 700,
+              marginBottom: 4,
+            }}
+          >
+            Resposta correta
+          </div>
+          <div style={{ fontWeight: 600, fontSize: '1.05rem' }}>{correctText}</div>
+        </div>
+        <p
+          style={{
+            margin: '0 0 12px',
+            fontWeight: 700,
+            color: accent,
+            fontSize: '1rem',
+          }}
+        >
+          {correct ? '✓ Sua peça avança.' : '✗ Você fica parado neste turno.'}
         </p>
         <div
           style={{
@@ -78,11 +111,6 @@ export function QuestionModal() {
           <p style={{ margin: '6px 0' }}>{tile.education.blurb}</p>
           <small style={{ opacity: 0.75 }}>Fonte: {tile.education.source}</small>
         </div>
-        <p style={{ marginTop: 12, fontSize: '0.85rem', opacity: 0.8 }}>
-          Resposta correta: <strong>
-            {question.options.find((o) => o.id === question.correctOptionId)?.text}
-          </strong>
-        </p>
       </Modal>
     );
   }

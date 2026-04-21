@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Modal } from './Modal';
 import { useGameStore } from '@/state/gameStore';
 import { useUiStore } from '@/state/uiStore';
@@ -11,6 +11,7 @@ import {
   type PlayerSectorGroup,
   type PlayerSimpleHolding,
 } from '@/engine/selectors';
+import { cashHistoryForPlayer, type CashHistoryEntry } from '@/engine/cashHistory';
 import { getTile } from '@/content/tiles';
 import { PLAYER_COLORS, sectorPalette } from '@/ui/theme';
 import type { GameState, IndustryTile, PlayerId, UtilityTile } from '@/engine/types';
@@ -20,25 +21,43 @@ const UTILITY_RENT_HINT = 'estimativa para soma dos dados = 7';
 const TRANSPORT_BAND = '#3a2a1a';
 const UTILITY_BAND = '#5a6b2e';
 
+type ViewTab = 'holdings' | 'history';
+
 export function AcquisitionsModal() {
   const state = useGameStore((s) => s.state)!;
   const setOpen = useUiStore((s) => s.setAcquisitionsOpen);
+  const focusPlayerId = useUiStore((s) => s.acquisitionsFocusPlayerId);
   const players = nonBankruptPlayers(state);
   const active = activePlayer(state);
-  const [selectedId, setSelectedId] = useState<PlayerId>(active.id);
+  const [selectedId, setSelectedId] = useState<PlayerId>(
+    (focusPlayerId as PlayerId | null) ?? active.id,
+  );
+  const [tab, setTab] = useState<ViewTab>('holdings');
 
-  const selectedPlayer = players.find((p) => p.id === selectedId) ?? active;
+  const focused = focusPlayerId != null;
+  const effectiveId = focused ? (focusPlayerId as PlayerId) : selectedId;
+  const selectedPlayer = players.find((p) => p.id === effectiveId) ?? active;
   const holdings = playerHoldings(state, selectedPlayer.id);
   const selectedColor =
     PLAYER_COLORS[state.players.findIndex((p) => p.id === selectedPlayer.id)] ?? PLAYER_COLORS[0]!;
 
+  const history = useMemo(
+    () => cashHistoryForPlayer(state, selectedPlayer.id),
+    [state.log, selectedPlayer.id],
+  );
+
   return (
-    <Modal title="Aquisições" onClose={() => setOpen(false)}>
-      <PlayerTabs
-        state={state}
-        selectedId={selectedPlayer.id}
-        onSelect={setSelectedId}
-      />
+    <Modal
+      title={focused ? `Aquisições — ${selectedPlayer.name}` : 'Aquisições'}
+      onClose={() => setOpen(false)}
+    >
+      {!focused && (
+        <PlayerTabs
+          state={state}
+          selectedId={selectedPlayer.id}
+          onSelect={setSelectedId}
+        />
+      )}
 
       <SummaryHeader
         accent={selectedColor}
@@ -49,45 +68,132 @@ export function AcquisitionsModal() {
         rentIncome={holdings.totals.rentIncome}
       />
 
-      {holdings.totals.tileCount === 0 ? (
-        <em>
-          Nenhuma aquisição ainda — compre uma indústria, transporte ou utilidade pública para
-          começar seu portfólio.
-        </em>
+      <ViewTabs
+        current={tab}
+        onSelect={setTab}
+        historyCount={history.length}
+        accent={selectedColor}
+      />
+
+      {tab === 'holdings' ? (
+        holdings.totals.tileCount === 0 ? (
+          <em style={{ display: 'block', marginBottom: 16 }}>
+            Nenhuma aquisição ainda — compre uma indústria, transporte ou utilidade pública
+            para começar seu portfólio.
+          </em>
+        ) : (
+          <>
+            {holdings.industriesBySector.length > 0 && (
+              <section style={{ marginBottom: 16 }}>
+                <SectionTitle accent={selectedColor}>Indústrias</SectionTitle>
+                {holdings.industriesBySector.map((g) => (
+                  <SectorGroup key={g.sector} state={state} group={g} />
+                ))}
+              </section>
+            )}
+            {holdings.transports.length > 0 && (
+              <section style={{ marginBottom: 16 }}>
+                <SectionTitle accent={selectedColor}>Transportes</SectionTitle>
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {holdings.transports.map((h) => (
+                    <TransportRow key={h.tileId} state={state} holding={h} />
+                  ))}
+                </div>
+              </section>
+            )}
+            {holdings.utilities.length > 0 && (
+              <section style={{ marginBottom: 16 }}>
+                <SectionTitle accent={selectedColor}>Utilidades públicas</SectionTitle>
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {holdings.utilities.map((h) => (
+                    <UtilityRow
+                      key={h.tileId}
+                      state={state}
+                      holding={h}
+                      ownerId={selectedPlayer.id}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )
       ) : (
-        <>
-          {holdings.industriesBySector.length > 0 && (
-            <section>
-              <SectionTitle>Indústrias</SectionTitle>
-              {holdings.industriesBySector.map((g) => (
-                <SectorGroup key={g.sector} state={state} group={g} />
-              ))}
-            </section>
-          )}
-          {holdings.transports.length > 0 && (
-            <section>
-              <SectionTitle>Transportes</SectionTitle>
-              {holdings.transports.map((h) => (
-                <TransportRow key={h.tileId} state={state} holding={h} />
-              ))}
-            </section>
-          )}
-          {holdings.utilities.length > 0 && (
-            <section>
-              <SectionTitle>Utilidades públicas</SectionTitle>
-              {holdings.utilities.map((h) => (
-                <UtilityRow
-                  key={h.tileId}
-                  state={state}
-                  holding={h}
-                  ownerId={selectedPlayer.id}
-                />
-              ))}
-            </section>
-          )}
-        </>
+        <HistoryList entries={history} />
       )}
     </Modal>
+  );
+}
+
+function ViewTabs({
+  current,
+  onSelect,
+  historyCount,
+  accent,
+}: {
+  current: ViewTab;
+  onSelect: (tab: ViewTab) => void;
+  historyCount: number;
+  accent: string;
+}) {
+  const tabs: Array<{ id: ViewTab; label: string; badge?: string }> = [
+    { id: 'holdings', label: 'Aquisições' },
+    { id: 'history', label: 'Histórico', badge: historyCount > 0 ? String(historyCount) : undefined },
+  ];
+  return (
+    <div
+      role="tablist"
+      aria-label="Visualização"
+      style={{
+        display: 'flex',
+        gap: 4,
+        borderBottom: '1px solid rgba(59,43,24,0.25)',
+        marginBottom: 14,
+      }}
+    >
+      {tabs.map((t) => {
+        const selected = current === t.id;
+        return (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onSelect(t.id)}
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              padding: '8px 14px',
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.95rem',
+              color: selected ? accent : 'var(--ink-soft)',
+              borderBottom: selected
+                ? `3px solid ${accent}`
+                : '3px solid transparent',
+              marginBottom: -1,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {t.label}
+            {t.badge && (
+              <span
+                style={{
+                  fontSize: '0.7rem',
+                  padding: '1px 6px',
+                  borderRadius: 999,
+                  background: selected ? accent : 'rgba(59,43,24,0.15)',
+                  color: selected ? 'var(--parchment-light)' : 'var(--ink)',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                {t.badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -108,15 +214,17 @@ function PlayerTabs({
       aria-label="Selecionar jogador"
       style={{
         position: 'sticky',
-        top: 0,
-        background: 'var(--parchment-light, #f3e7c1)',
+        top: -24,
+        background: 'var(--parchment-light)',
         display: 'flex',
-        gap: 4,
+        gap: 6,
         flexWrap: 'wrap',
-        padding: '4px 0 8px',
-        marginBottom: 4,
+        padding: '12px 0 10px',
+        marginTop: -8,
+        marginBottom: 12,
         borderBottom: '1px solid rgba(59,43,24,0.25)',
-        zIndex: 1,
+        boxShadow: '0 4px 6px -4px rgba(59,43,24,0.35)',
+        zIndex: 2,
       }}
     >
       {players.map((p) => {
@@ -184,20 +292,18 @@ function SummaryHeader({
     <div
       data-testid="acq-summary"
       style={{
-        position: 'sticky',
-        top: 44,
-        background: 'rgba(0,0,0,0.04)',
-        border: `1px solid ${accent}`,
-        borderRadius: 6,
-        padding: '8px 12px',
-        marginBottom: 12,
+        background: 'var(--parchment-light)',
+        border: `2px solid ${accent}`,
+        borderRadius: 8,
+        padding: '10px 14px',
+        marginBottom: 16,
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
-        gap: 8,
-        zIndex: 1,
+        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+        gap: 10,
+        boxShadow: 'inset 0 0 20px rgba(121, 85, 42, 0.1)',
       }}
     >
-      <SummaryStat label={playerName} value="" />
+      <SummaryStat label="Jogador" value={playerName} accent={accent} emphasis />
       <SummaryStat label="Caixa" value={`R$${cash}`} />
       <SummaryStat label="Aquisições" value={String(tileCount)} />
       <SummaryStat label="Hipoteca disponível" value={`R$${mortgageValueAvailable}`} />
@@ -206,17 +312,163 @@ function SummaryHeader({
   );
 }
 
-function SummaryStat({ label, value }: { label: string; value: string }) {
+function SummaryStat({
+  label,
+  value,
+  accent,
+  emphasis,
+}: {
+  label: string;
+  value: string;
+  accent?: string;
+  emphasis?: boolean;
+}) {
   return (
     <div>
-      <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', opacity: 0.7 }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem' }}>{value}</div>
+      <div
+        style={{
+          fontSize: '0.7rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          opacity: 0.7,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: emphasis ? '1.2rem' : '1.05rem',
+          color: emphasis && accent ? accent : 'var(--ink)',
+          lineHeight: 1.2,
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
 }
 
-function SectionTitle({ children }: { children: string }) {
-  return <h3 style={{ marginBottom: 8 }}>{children}</h3>;
+function SectionTitle({ children, accent }: { children: string; accent?: string }) {
+  return (
+    <h3
+      style={{
+        margin: '0 0 10px',
+        paddingLeft: 10,
+        borderLeft: `3px solid ${accent ?? 'var(--ink-soft)'}`,
+        fontFamily: 'var(--font-display)',
+        fontSize: '1.1rem',
+        fontWeight: 500,
+      }}
+    >
+      {children}
+    </h3>
+  );
+}
+
+function HistoryList({ entries }: { entries: CashHistoryEntry[] }) {
+  if (entries.length === 0) {
+    return (
+      <em style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7 }}>
+        Sem movimentações financeiras registradas.
+      </em>
+    );
+  }
+  const totals = entries.reduce(
+    (acc, e) => {
+      if (e.delta > 0) acc.in += e.delta;
+      else acc.out += -e.delta;
+      return acc;
+    },
+    { in: 0, out: 0 },
+  );
+  // Reverse so most recent appears first.
+  const rows = [...entries].reverse();
+  return (
+    <div>
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          fontSize: '0.78rem',
+          marginBottom: 8,
+          flexWrap: 'wrap',
+        }}
+      >
+        <span
+          style={{
+            padding: '3px 8px',
+            borderRadius: 4,
+            background: 'rgba(31, 122, 68, 0.15)',
+            color: '#1f7a44',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          ▲ Entradas: R${totals.in}
+        </span>
+        <span
+          style={{
+            padding: '3px 8px',
+            borderRadius: 4,
+            background: 'rgba(161, 42, 31, 0.15)',
+            color: '#a12a1f',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          ▼ Saídas: R${totals.out}
+        </span>
+        <span
+          style={{
+            padding: '3px 8px',
+            borderRadius: 4,
+            background: 'rgba(59,43,24,0.1)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          Saldo líquido: R${totals.in - totals.out}
+        </span>
+      </div>
+      <div style={{ display: 'grid', gap: 4 }}>
+        {rows.map((e) => {
+          const positive = e.delta > 0;
+          const color = positive ? '#1f7a44' : '#a12a1f';
+          return (
+            <div
+              key={e.index}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr auto',
+                gap: 10,
+                alignItems: 'center',
+                padding: '6px 10px',
+                border: '1px solid rgba(59,43,24,0.18)',
+                borderLeft: `3px solid ${color}`,
+                borderRadius: 6,
+                background: 'rgba(255,255,255,0.3)',
+                fontSize: '0.85rem',
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 500 }}>{e.reason}</div>
+                <div style={{ fontSize: '0.72rem', opacity: 0.7 }}>{e.raw}</div>
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1rem',
+                  fontVariantNumeric: 'tabular-nums',
+                  color,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {positive ? '+' : '−'} R${e.amount}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function SectorGroup({ state, group }: { state: GameState; group: PlayerSectorGroup }) {
@@ -304,7 +556,7 @@ function SectorGroup({ state, group }: { state: GameState; group: PlayerSectorGr
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {group.tiles.length}/{group.sectorTotal} tiles
+            {group.tiles.length}/{group.sectorTotal} casas
           </span>
         </div>
       </header>

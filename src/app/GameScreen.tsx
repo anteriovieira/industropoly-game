@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BoardScene } from '@/scene/BoardScene';
 import { SceneErrorBoundary } from './SceneErrorBoundary';
 import { Hud } from '@/ui/Hud';
+import { GameToaster } from '@/ui/GameToaster';
 import { useGameStore } from '@/state/gameStore';
 import { useUiStore } from '@/state/uiStore';
 import { TileInfoModal } from '@/ui/modals/TileInfoModal';
@@ -148,6 +149,7 @@ export function GameScreen() {
         </div>
       </SceneErrorBoundary>
       <Hud />
+      <GameToaster />
       <CameraHint />
       {state.turnPhase === 'awaiting-quiz-answer' && state.currentQuiz && <QuestionModal />}
       {m?.kind === 'tile-info' && state.turnPhase !== 'awaiting-quiz-answer' && (

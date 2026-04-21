@@ -1,15 +1,52 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGameStore } from '@/state/gameStore';
 import { useUiStore } from '@/state/uiStore';
 import { Parchment } from './Parchment';
-import { MuteButton } from './MuteButton';
 import { Minimap } from './Minimap';
 import { Modal } from './modals/Modal';
+import { HudMenu } from './HudMenu';
+import { useDraggable, type DraggablePos } from './useDraggable';
 import { activePlayer, playerHoldings } from '@/engine/selectors';
 import { audio } from '@/lib/audio';
 import { clear as clearSave } from '@/lib/persist';
+import {
+  isShakeSupported,
+  requestShakePermission,
+  useShakeToRoll,
+} from '@/lib/shake';
 import type { GameState, Player, PlayerId, TurnPhase } from '@/engine/types';
 import { PLAYER_COLORS, sectorPalette } from './theme';
+
+const SHAKE_PREF_KEY = 'industropoly:shakeToRoll';
+const HUD_LAYOUT_KEY = 'industropoly:hudLayout';
+const CARD_DEFAULT_WIDTH = 180;
+const CARD_DEFAULT_GAP = 12;
+const MINIMAP_APPROX_SIZE = 140;
+
+function loadShakePref(): boolean {
+  try {
+    return localStorage.getItem(SHAKE_PREF_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function saveShakePref(enabled: boolean): void {
+  try {
+    localStorage.setItem(SHAKE_PREF_KEY, enabled ? '1' : '0');
+  } catch {
+    // ignore
+  }
+}
+
+function defaultCardPos(index: number): DraggablePos {
+  return { x: 16 + index * (CARD_DEFAULT_WIDTH + CARD_DEFAULT_GAP), y: 16 };
+}
+
+function defaultMinimapPos(): DraggablePos {
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+  return { x: 16, y: Math.max(16, vh - 96 - MINIMAP_APPROX_SIZE) };
+}
 
 const PHASE_LABELS: Record<TurnPhase, string> = {
   'awaiting-roll': 'aguardando lançamento',
@@ -29,10 +66,21 @@ export function Hud() {
   const setJournalOpen = useUiStore((s) => s.setJournalOpen);
   const setStoryOpen = useUiStore((s) => s.setStoryOpen);
   const setAcquisitionsOpen = useUiStore((s) => s.setAcquisitionsOpen);
+  const openAcquisitionsForPlayer = useUiStore((s) => s.openAcquisitionsForPlayer);
   const setPhase = useUiStore((s) => s.setPhase);
+  const setNotice = useUiStore((s) => s.setNotice);
   const resetCamera = useUiStore((s) => s.resetCamera);
   const [confirmingQuit, setConfirmingQuit] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<PlayerId>>(new Set());
+  const [shakeEnabled, setShakeEnabled] = useState<boolean>(loadShakePref);
+  const shakeSupported = isShakeSupported();
+
+  const minimapDefault = useMemo(() => defaultMinimapPos(), []);
+  const minimapDrag = useDraggable({
+    storageKey: HUD_LAYOUT_KEY,
+    id: 'minimap',
+    defaultPos: minimapDefault,
+  });
 
   function toggleCard(id: PlayerId): void {
     setExpandedCards((prev) => {
@@ -48,6 +96,53 @@ export function Hud() {
     clearSave();
     setPhase('intro');
     clearStore();
+  }
+
+  // Refs that the shake listener reads on every devicemotion event. Declared
+  // before the early-return so hook order stays consistent across renders.
+  const rollReadyRef = useRef(false);
+  const handleRollRef = useRef<() => void>(() => {});
+
+  useShakeToRoll(shakeEnabled, () => {
+    if (!rollReadyRef.current) return;
+    handleRollRef.current();
+  });
+
+  // If the user previously enabled shake on a device that needs permission
+  // (iOS), the permission doesn't survive reload — silently downgrade so the
+  // button reflects reality and we don't claim shake is on when it isn't.
+  useEffect(() => {
+    if (!shakeEnabled || !shakeSupported) return;
+    const ctor = window.DeviceMotionEvent as typeof DeviceMotionEvent & {
+      requestPermission?: () => Promise<'granted' | 'denied'>;
+    };
+    if (typeof ctor.requestPermission === 'function') {
+      setShakeEnabled(false);
+      saveShakePref(false);
+    }
+  }, [shakeEnabled, shakeSupported]);
+
+  async function toggleShake(): Promise<void> {
+    audio.play('click');
+    if (!shakeSupported) {
+      setNotice('Este dispositivo não suporta detecção de chacoalhar.');
+      return;
+    }
+    if (shakeEnabled) {
+      setShakeEnabled(false);
+      saveShakePref(false);
+      return;
+    }
+    const result = await requestShakePermission();
+    if (result === 'granted') {
+      setShakeEnabled(true);
+      saveShakePref(true);
+      setNotice('Chacoalhe o tablet para lançar os dados.');
+    } else if (result === 'denied') {
+      setNotice('Permissão de movimento negada. Ative nas configurações do navegador.');
+    } else {
+      setNotice('Este dispositivo não suporta detecção de chacoalhar.');
+    }
   }
 
   if (!state) return null;
@@ -102,66 +197,30 @@ export function Hud() {
       : `Lançar → ${nextRoller.name} (E)`
     : 'Lançar (Espaço)';
 
+  // Keep refs in sync each render so the shake listener (attached once per
+  // enable/disable cycle) always observes current phase state without needing
+  // to re-subscribe on every dispatch.
+  rollReadyRef.current = canRollButton;
+  handleRollRef.current = handleRoll;
+
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
-      <div
-        style={{
-          position: 'absolute',
-          top: 16,
-          left: 16,
-          right: 180, // room for the quit button at top-right
-          display: 'flex',
-          gap: 12,
-          pointerEvents: 'auto',
-          flexWrap: 'wrap',
-        }}
-      >
-        {state.players.map((p, i) => (
-          <PlayerCard
-            key={p.id}
-            player={p}
-            color={PLAYER_COLORS[i] ?? PLAYER_COLORS[0]!}
-            isActive={p.id === active.id}
-            expanded={expandedCards.has(p.id)}
-            onToggle={() => toggleCard(p.id)}
-            onOpenDetails={() => {
-              audio.play('click');
-              setAcquisitionsOpen(true);
-            }}
-            state={state}
-          />
-        ))}
-      </div>
-
-      {/* Quit-game button — top-right corner. */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          pointerEvents: 'auto',
-        }}
-      >
-        <button
-          onClick={() => {
+      {state.players.map((p, i) => (
+        <PlayerCard
+          key={p.id}
+          player={p}
+          color={PLAYER_COLORS[i] ?? PLAYER_COLORS[0]!}
+          isActive={p.id === active.id}
+          expanded={expandedCards.has(p.id)}
+          onToggle={() => toggleCard(p.id)}
+          onOpenDetails={() => {
             audio.play('click');
-            setConfirmingQuit(true);
+            openAcquisitionsForPlayer(p.id);
           }}
-          aria-label="Encerrar jogo"
-          title="Encerrar jogo"
-          style={{
-            padding: '6px 10px',
-            fontSize: '0.85rem',
-            background: 'rgba(138, 42, 27, 0.85)',
-            color: '#f3e7c1',
-            border: '1px solid #3b2b18',
-            borderRadius: 6,
-            cursor: 'pointer',
-          }}
-        >
-          ✕ Encerrar jogo
-        </button>
-      </div>
+          state={state}
+          defaultPos={defaultCardPos(i)}
+        />
+      ))}
 
       {confirmingQuit && (
         <Modal
@@ -190,14 +249,27 @@ export function Hud() {
         </Modal>
       )}
 
-      {/* Minimap — bottom-left, above the control bar. Hidden on very narrow screens
-          (see .minimap-root media query in global.css) rather than shrunk below legibility. */}
+      {/* Minimap — draggable. Hidden on very narrow screens (see .minimap-root
+          media query in global.css) rather than shrunk below legibility. */}
       <div
+        ref={minimapDrag.ref}
+        onPointerDown={minimapDrag.handlers.onPointerDown}
+        onPointerMove={minimapDrag.handlers.onPointerMove}
+        onPointerUp={minimapDrag.handlers.onPointerUp}
+        onPointerCancel={minimapDrag.handlers.onPointerCancel}
+        onClickCapture={minimapDrag.handlers.onClickCapture}
         style={{
           position: 'absolute',
-          bottom: 96,
-          left: 16,
+          left: minimapDrag.position.x,
+          top: minimapDrag.position.y,
           pointerEvents: 'auto',
+          cursor: minimapDrag.isDragging ? 'grabbing' : 'grab',
+          touchAction: 'none',
+          userSelect: 'none',
+          zIndex: minimapDrag.isDragging ? 10 : undefined,
+          filter: minimapDrag.isDragging
+            ? 'drop-shadow(0 12px 20px rgba(0,0,0,0.45))'
+            : undefined,
         }}
       >
         <Minimap />
@@ -211,47 +283,45 @@ export function Hud() {
           right: 16,
           display: 'flex',
           gap: 8,
+          alignItems: 'center',
           justifyContent: 'center',
           pointerEvents: 'auto',
           flexWrap: 'wrap',
         }}
       >
-        <Parchment padding="10px 14px" style={{ minWidth: 320 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              {canEnd && !samePlayerAgain ? (
-                <>
-                  <div style={{ fontFamily: 'var(--font-display)' }}>
-                    Próximo: {nextRoller.name}
-                  </div>
-                  <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-                    Turno {state.turn} concluído · {active.name}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontFamily: 'var(--font-display)' }}>
-                    Turno {state.turn} — {active.name}
-                  </div>
-                  <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-                    {canEnd && samePlayerAgain
-                      ? 'Dupla! Mesmo jogador lança de novo'
-                      : `Fase: ${PHASE_LABELS[phase]}`}
-                  </div>
-                </>
-              )}
-            </div>
-            <button
-              className="primary"
-              disabled={!canRollButton}
-              onClick={handleRoll}
-              aria-label={rollLabel}
-              style={{ flexShrink: 0 }}
-            >
-              {rollLabel}
-            </button>
+        <Parchment padding="6px 14px" style={{ minWidth: 220, alignSelf: 'stretch', display: 'flex', alignItems: 'center' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {canEnd && !samePlayerAgain ? (
+              <>
+                <div style={{ fontFamily: 'var(--font-display)', lineHeight: 1.15 }}>
+                  Próximo: {nextRoller.name}
+                </div>
+                <div style={{ fontSize: '0.8rem', opacity: 0.8, lineHeight: 1.15 }}>
+                  Turno {state.turn} concluído · {active.name}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontFamily: 'var(--font-display)', lineHeight: 1.15 }}>
+                  Turno {state.turn} — {active.name}
+                </div>
+                <div style={{ fontSize: '0.8rem', opacity: 0.8, lineHeight: 1.15 }}>
+                  {canEnd && samePlayerAgain
+                    ? 'Dupla! Mesmo jogador lança de novo'
+                    : `Fase: ${PHASE_LABELS[phase]}`}
+                </div>
+              </>
+            )}
           </div>
         </Parchment>
+        <button
+          className="primary"
+          disabled={!canRollButton}
+          onClick={handleRoll}
+          aria-label={rollLabel}
+        >
+          {rollLabel}
+        </button>
         <button
           disabled={!canResolveMove}
           onClick={() => dispatch({ type: 'RESOLVE_MOVEMENT' })}
@@ -272,45 +342,18 @@ export function Hud() {
         >
           Info (I)
         </button>
-        <button
-          onClick={() => {
-            audio.play('click');
-            setJournalOpen(true);
+        <HudMenu
+          shakeSupported={shakeSupported}
+          shakeEnabled={shakeEnabled}
+          onOpenJournal={() => setJournalOpen(true)}
+          onOpenStory={() => setStoryOpen(true)}
+          onOpenAcquisitions={() => setAcquisitionsOpen(true)}
+          onResetCamera={() => resetCamera()}
+          onToggleShake={() => {
+            void toggleShake();
           }}
-        >
-          Diário (J)
-        </button>
-        <button
-          onClick={() => {
-            audio.play('click');
-            setStoryOpen(true);
-          }}
-          aria-label="Ler edição atual do jornal (H)"
-          title="Ler edição atual do jornal (H)"
-        >
-          📰 Jornal (H)
-        </button>
-        <button
-          onClick={() => {
-            audio.play('click');
-            setAcquisitionsOpen(true);
-          }}
-          aria-label="Ver aquisições (A)"
-          title="Ver aquisições (A)"
-        >
-          Aquisições (A)
-        </button>
-        <button
-          onClick={() => {
-            audio.play('click');
-            resetCamera();
-          }}
-          aria-label="Centralizar câmera (C)"
-          title="Centralizar câmera (C)"
-        >
-          Centralizar (C)
-        </button>
-        <MuteButton />
+          onRequestQuit={() => setConfirmingQuit(true)}
+        />
       </div>
 
       {/* spacer */}
@@ -344,6 +387,7 @@ interface PlayerCardProps {
   onToggle: () => void;
   onOpenDetails: () => void;
   state: GameState;
+  defaultPos: DraggablePos;
 }
 
 function PlayerCard({
@@ -354,10 +398,34 @@ function PlayerCard({
   onToggle,
   onOpenDetails,
   state,
+  defaultPos,
 }: PlayerCardProps) {
   const holdings = expanded ? playerHoldings(state, player.id) : null;
+  const { position, isDragging, ref, handlers } = useDraggable({
+    storageKey: HUD_LAYOUT_KEY,
+    id: `player:${player.id}`,
+    defaultPos,
+  });
 
   return (
+    <div
+      ref={ref}
+      onPointerDown={handlers.onPointerDown}
+      onPointerMove={handlers.onPointerMove}
+      onPointerUp={handlers.onPointerUp}
+      onPointerCancel={handlers.onPointerCancel}
+      onClickCapture={handlers.onClickCapture}
+      style={{
+        position: 'absolute',
+        left: position.x,
+        top: position.y,
+        pointerEvents: 'auto',
+        cursor: isDragging ? 'grabbing' : 'grab',
+        touchAction: 'none',
+        userSelect: 'none',
+        zIndex: isDragging ? 10 : undefined,
+      }}
+    >
     <Parchment
       padding="10px 14px"
       style={{
@@ -366,6 +434,9 @@ function PlayerCard({
         opacity: player.bankrupt ? 0.45 : 1,
         border: isActive ? `2px solid ${color}` : '1px solid rgba(59,43,24,0.4)',
         transition: 'min-width 120ms ease',
+        boxShadow: isDragging
+          ? '0 12px 32px rgba(0,0,0,0.45), inset 0 0 60px rgba(121,85,42,0.25)'
+          : undefined,
       }}
     >
       <button
@@ -441,7 +512,7 @@ function PlayerCard({
                   opacity: 0.85,
                 }}
               >
-                <span>{holdings.totals.tileCount} tiles</span>
+                <span>{holdings.totals.tileCount} propriedades</span>
                 <span>R${holdings.totals.rentIncome}/turno</span>
               </div>
               <div style={{ display: 'grid', gap: 4 }}>
@@ -489,6 +560,7 @@ function PlayerCard({
         </div>
       )}
     </Parchment>
+    </div>
   );
 }
 

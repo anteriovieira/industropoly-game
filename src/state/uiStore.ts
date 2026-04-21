@@ -16,6 +16,8 @@ interface UiStore {
   setStoryOpen: (open: boolean) => void;
   acquisitionsOpen: boolean;
   setAcquisitionsOpen: (open: boolean) => void;
+  acquisitionsFocusPlayerId: string | null;
+  openAcquisitionsForPlayer: (playerId: string) => void;
   notice: string | null;
   setNotice: (notice: string | null) => void;
   cameraResetNonce: number;
@@ -39,7 +41,11 @@ export const useUiStore = create<UiStore>((set) => ({
   storyOpen: false,
   setStoryOpen: (storyOpen) => set({ storyOpen }),
   acquisitionsOpen: false,
-  setAcquisitionsOpen: (acquisitionsOpen) => set({ acquisitionsOpen }),
+  setAcquisitionsOpen: (acquisitionsOpen) =>
+    set(acquisitionsOpen ? { acquisitionsOpen } : { acquisitionsOpen, acquisitionsFocusPlayerId: null }),
+  acquisitionsFocusPlayerId: null,
+  openAcquisitionsForPlayer: (playerId) =>
+    set({ acquisitionsOpen: true, acquisitionsFocusPlayerId: playerId }),
   notice: null,
   setNotice: (notice) => set({ notice }),
   cameraResetNonce: 0,

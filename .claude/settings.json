@@ -16,7 +16,8 @@
       "mcp__frontend-log-bridge__collect_frontend_logs",
       "Bash(ipconfig getifaddr *)",
       "Bash(socat TCP-LISTEN:5858,bind=0.0.0.0,reuseaddr,fork TCP:127.0.0.1:5858)",
-      "Bash(curl -s http://127.0.0.1:5858/health)"
+      "Bash(curl -s http://127.0.0.1:5858/health)",
+      "Bash(npx eslint *)"
     ],
     "additionalDirectories": [
       "/Users/anteriovieira/.claude/plugins/local-plugins/frontend-log-bridge"

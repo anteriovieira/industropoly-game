@@ -21,15 +21,23 @@ export function Modal({
   footer,
 }: ModalProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const onConfirmRef = useRef(onConfirm);
+  onCloseRef.current = onClose;
+  onConfirmRef.current = onConfirm;
+
+  // Focus only on mount — re-running this effect on every render (e.g. when
+  // inline callbacks change identity) scrolls the dialog's scrollable container
+  // back to the top while the user is scrolling.
   useEffect(() => {
-    ref.current?.focus();
+    ref.current?.focus({ preventScroll: true });
     function onKey(e: KeyboardEvent): void {
-      if (e.key === 'Escape' && dismissible) onClose?.();
-      if (e.key === 'Enter' && onConfirm) onConfirm();
+      if (e.key === 'Escape' && dismissible) onCloseRef.current?.();
+      if (e.key === 'Enter' && onConfirmRef.current) onConfirmRef.current();
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [dismissible, onClose, onConfirm]);
+  }, [dismissible]);
 
   return (
     <div
