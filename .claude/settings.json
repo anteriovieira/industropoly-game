@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npx tsc *)",
       "Bash(pnpm dev *)",
-      "Bash(pkill -f \"vite\")"
+      "Bash(pkill -f \"vite\")",
+      "Bash(openspec --version)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)"
     ]
   }
 }

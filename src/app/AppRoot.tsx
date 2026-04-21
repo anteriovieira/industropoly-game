@@ -6,6 +6,7 @@ import { SetupScreen } from './SetupScreen';
 import { GameScreen } from './GameScreen';
 import { SummaryScreen } from './SummaryScreen';
 import { ResumeDialog } from './ResumeDialog';
+import { UpdatePill } from '@/components/UpdatePill';
 import { load } from '@/lib/persist';
 
 export function AppRoot() {
@@ -54,6 +55,7 @@ export function AppRoot() {
           {notice}
         </div>
       )}
+      <UpdatePill />
     </>
   );
 }

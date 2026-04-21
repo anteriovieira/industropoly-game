@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Industropoly">
+  <title>Industropoly</title>
+  <rect width="64" height="64" rx="12" fill="#0F3B3A"/>
+  <g fill="#E2B049">
+    <!-- simplified mill silhouette: two stacks + pitched roof -->
+    <rect x="14" y="16" width="6" height="22"/>
+    <rect x="13" y="14" width="8" height="4"/>
+    <rect x="44" y="20" width="6" height="18"/>
+    <rect x="43" y="18" width="8" height="4"/>
+    <path d="M10 36 L18 28 L26 36 L34 28 L42 36 L50 28 L54 36 Z" stroke="#0F3B3A" stroke-width="1.5"/>
+    <rect x="10" y="36" width="44" height="14"/>
+    <rect x="28" y="42" width="8" height="8" fill="#0F3B3A"/>
+  </g>
+  <rect x="14" y="40" width="3" height="4" fill="#0F3B3A"/>
+  <rect x="21" y="40" width="3" height="4" fill="#0F3B3A"/>
+  <rect x="40" y="40" width="3" height="4" fill="#0F3B3A"/>
+  <rect x="47" y="40" width="3" height="4" fill="#0F3B3A"/>
+</svg>

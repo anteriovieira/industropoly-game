@@ -1,5 +1,6 @@
 import { useUiStore } from '@/state/uiStore';
 import { Parchment } from '@/ui/Parchment';
+import { InstallButton } from '@/components/InstallButton';
 
 export function IntroScreen() {
   const setPhase = useUiStore((s) => s.setPhase);
@@ -40,7 +41,17 @@ export function IntroScreen() {
           real. Jogue bem e aprenderá, de dentro, o formato da primeira revolução industrial do
           mundo.
         </p>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+            marginTop: 20,
+            flexWrap: 'wrap',
+          }}
+        >
+          <InstallButton />
           <button className="primary" onClick={() => setPhase('setup')} autoFocus>
             Começar
           </button>

@@ -3,6 +3,8 @@ import { AppRoot } from './app/AppRoot';
 import { SceneErrorBoundary } from './app/SceneErrorBoundary';
 import { GlobalErrorOverlay } from './app/GlobalErrorOverlay';
 import { installWebglPrecisionShim } from './lib/webglShim';
+import { registerServiceWorker } from './pwa/registerServiceWorker';
+import { usePwaStore } from './pwa/pwaStore';
 import './ui/global.css';
 
 installWebglPrecisionShim();
@@ -21,3 +23,8 @@ createRoot(container).render(
     <GlobalErrorOverlay />
   </SceneErrorBoundary>,
 );
+
+registerServiceWorker({
+  onNeedRefresh: (activate) => usePwaStore.getState().setNeedRefresh(activate),
+  onOfflineReady: () => usePwaStore.getState().setOfflineReady(true),
+});

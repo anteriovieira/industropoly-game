@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Industropoly">
+  <title>Industropoly</title>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="85%">
+      <stop offset="0%" stop-color="#1A5A58"/>
+      <stop offset="70%" stop-color="#0F3B3A"/>
+      <stop offset="100%" stop-color="#082626"/>
+    </radialGradient>
+    <linearGradient id="brick" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#B34A2A"/>
+      <stop offset="100%" stop-color="#7A2E18"/>
+    </linearGradient>
+  </defs>
+
+  <!-- full-bleed background (maskable: the mask clips to any shape) -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+
+  <!-- safe-zone ring (ornamental, inside inner 80%) -->
+  <g transform="translate(256 256)" fill="none" stroke="#E2B049">
+    <circle r="190" stroke-width="5" opacity="0.8"/>
+    <circle r="178" stroke-width="1.5" opacity="0.45"/>
+  </g>
+
+  <!-- content scaled to inner 80% safe zone -->
+  <g transform="translate(256 256) scale(0.72)">
+    <!-- factory body -->
+    <g>
+      <ellipse cx="0" cy="118" rx="160" ry="10" fill="#000" opacity="0.25"/>
+      <rect x="-96" y="-138" width="30" height="150" fill="url(#brick)" stroke="#3a1608" stroke-width="3"/>
+      <rect x="-100" y="-146" width="38" height="14" fill="#3a1608"/>
+      <rect x="52" y="-116" width="30" height="130" fill="url(#brick)" stroke="#3a1608" stroke-width="3"/>
+      <rect x="48" y="-124" width="38" height="14" fill="#3a1608"/>
+
+      <path d="M -130 -20 L -90 -60 L -50 -20 L -10 -60 L 30 -20 L 70 -60 L 110 -20 Z"
+            fill="#5c2413" stroke="#2a0f07" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="-130" y="-20" width="240" height="130" fill="url(#brick)" stroke="#2a0f07" stroke-width="3"/>
+
+      <g fill="#F2C36B" stroke="#2a0f07" stroke-width="2">
+        <rect x="-116" y="0" width="22" height="28"/>
+        <rect x="-84" y="0" width="22" height="28"/>
+        <rect x="-52" y="0" width="22" height="28"/>
+        <rect x="-20" y="0" width="22" height="28"/>
+        <rect x="12" y="0" width="22" height="28"/>
+        <rect x="44" y="0" width="22" height="28"/>
+        <rect x="76" y="0" width="22" height="28"/>
+
+        <rect x="-116" y="40" width="22" height="28"/>
+        <rect x="-84" y="40" width="22" height="28"/>
+        <rect x="-52" y="40" width="22" height="28"/>
+        <rect x="12" y="40" width="22" height="28"/>
+        <rect x="44" y="40" width="22" height="28"/>
+        <rect x="76" y="40" width="22" height="28"/>
+      </g>
+
+      <path d="M -30 110 L -30 68 A 30 30 0 0 1 30 68 L 30 110 Z" fill="#2a0f07" stroke="#2a0f07" stroke-width="2"/>
+      <path d="M -20 110 L -20 72 A 20 20 0 0 1 20 72 L 20 110 Z" fill="#E2B049"/>
+
+      <g transform="translate(82 86)" fill="#E2B049" stroke="#2a0f07" stroke-width="3">
+        <g>
+          <circle r="26"/>
+          <rect x="-5" y="-36" width="10" height="10" rx="1"/>
+          <rect x="-5" y="26" width="10" height="10" rx="1"/>
+          <rect x="-36" y="-5" width="10" height="10" rx="1"/>
+          <rect x="26" y="-5" width="10" height="10" rx="1"/>
+        </g>
+        <g transform="rotate(45)">
+          <rect x="-5" y="-36" width="10" height="10" rx="1"/>
+          <rect x="-5" y="26" width="10" height="10" rx="1"/>
+          <rect x="-36" y="-5" width="10" height="10" rx="1"/>
+          <rect x="26" y="-5" width="10" height="10" rx="1"/>
+        </g>
+        <circle r="9" fill="#2a0f07" stroke="none"/>
+      </g>
+    </g>
+  </g>
+</svg>

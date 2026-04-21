@@ -83,9 +83,35 @@ Question content lives in `src/content/questions.ts`, keyed by `tileId`. Every g
 
 Then run `npm run lint:content` — the lint enforces that every gameplay tile has a question, options are 2..4, `correctOptionId` matches an option, sources are present, and `eliminate-option` hints don't target the correct answer.
 
+## Progressive Web App
+
+Industropoly ships as an installable PWA. On Chrome/Edge/Android a subtle **Install app** button appears on the intro screen once the browser signals installability (`beforeinstallprompt`). On iOS Safari, where that event isn't supported, the intro screen offers **Adicionar à tela de início** which opens a short guide for the Share → Add to Home Screen flow. Once installed, the game launches in standalone mode (no browser chrome), and the app shell plus previously loaded fonts, images, and 3D assets are served from the Workbox cache — the game boots offline on subsequent visits.
+
+### Updates
+
+A non-blocking **Nova versão disponível** pill appears in the bottom-right when a new service worker is waiting to activate, so mid-game sessions aren't interrupted. Click **Recarregar** to swap to the new build, or dismiss to finish the current turn and let the next launch auto-update.
+
+### Env flags
+
+- `VITE_PWA_DEV=1 npm run dev` — enable the service worker in development (off by default so HMR isn't confused by stale caches).
+- `VITE_PWA_DISABLE=1 npm run build` — emit a no-op build without the service worker or manifest registration. Useful as a rollback knob.
+
+### Regenerating icons
+
+The PWA icon set is rendered from source SVGs:
+
+```bash
+npm run icons
+```
+
+- Source SVGs: `assets/icon/industropoly-icon.svg`, `industropoly-icon-maskable.svg`, `industropoly-favicon.svg`.
+- Outputs (committed): `public/icon-192.png`, `public/icon-512.png`, `public/icon-maskable-512.png`, `public/apple-touch-icon.png`, `public/favicon.svg`.
+
+Edit the SVGs, rerun `npm run icons`, and commit the regenerated PNGs.
+
 ## Deploy
 
-Any static host works (GitHub Pages, Netlify, Vercel static, S3). Build output in `dist/` is self-contained. Set `VITE_BASE=/industropoly/` when hosting under a subpath.
+Any static host works (GitHub Pages, Netlify, Vercel static, S3). Build output in `dist/` is self-contained. Set `VITE_BASE=/industropoly/` when hosting under a subpath. Note: the PWA manifest uses `start_url: "/"` and `scope: "/"`; if you deploy under a subpath, override them via the manifest block in `vite.config.ts` to match `VITE_BASE`.
 
 ## Status
 
