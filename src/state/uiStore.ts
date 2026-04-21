@@ -20,6 +20,9 @@ interface UiStore {
   setNotice: (notice: string | null) => void;
   cameraResetNonce: number;
   resetCamera: () => void;
+  cameraFocusTileId: number | null;
+  cameraFocusNonce: number;
+  focusCameraOnTile: (tileId: number) => void;
   diceDragging: boolean;
   setDiceDragging: (dragging: boolean) => void;
 }
@@ -41,6 +44,10 @@ export const useUiStore = create<UiStore>((set) => ({
   setNotice: (notice) => set({ notice }),
   cameraResetNonce: 0,
   resetCamera: () => set((s) => ({ cameraResetNonce: s.cameraResetNonce + 1 })),
+  cameraFocusTileId: null,
+  cameraFocusNonce: 0,
+  focusCameraOnTile: (tileId) =>
+    set((s) => ({ cameraFocusTileId: tileId, cameraFocusNonce: s.cameraFocusNonce + 1 })),
   diceDragging: false,
   setDiceDragging: (diceDragging) => set({ diceDragging }),
 }));

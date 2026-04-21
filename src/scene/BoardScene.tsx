@@ -5,6 +5,7 @@ import { Board } from './Board';
 import { Tokens } from './tokens/Tokens';
 import { Dice } from './Dice';
 import { useUiStore } from '@/state/uiStore';
+import { anchorForTile } from './layout';
 import { useEffect, useMemo, useRef } from 'react';
 import type { MapControls as MapControlsImpl } from 'three-stdlib';
 
@@ -19,6 +20,8 @@ export function BoardScene() {
   const { pixelRatio, shadowMapType } = useMemo(() => qualityPreset(quality), [quality]);
   const controls = useRef<MapControlsImpl | null>(null);
   const resetKey = useUiStore((s) => s.cameraResetNonce);
+  const focusKey = useUiStore((s) => s.cameraFocusNonce);
+  const focusTileId = useUiStore((s) => s.cameraFocusTileId);
   const diceDragging = useUiStore((s) => s.diceDragging);
 
   // Clamp the pan target on every change so the board never strays too far off-screen.
@@ -43,6 +46,24 @@ export function BoardScene() {
     c.object.position.set(...DEFAULT_CAMERA_POS);
     c.update();
   }, [resetKey]);
+
+  // Focus the camera on a specific tile when the focus nonce bumps (e.g. clicking the minimap).
+  // Pan the target only — we preserve the user's current zoom level.
+  useEffect(() => {
+    if (focusKey === 0 || focusTileId == null) return;
+    const c = controls.current;
+    if (!c) return;
+    const a = anchorForTile(focusTileId);
+    const tx = clamp(a.x, -PAN_LIMIT, PAN_LIMIT);
+    const tz = clamp(a.z, -PAN_LIMIT, PAN_LIMIT);
+    // Shift the camera by the same delta so the framing (distance + angle) is preserved.
+    const dx = tx - c.target.x;
+    const dz = tz - c.target.z;
+    c.target.set(tx, 0, tz);
+    c.object.position.x += dx;
+    c.object.position.z += dz;
+    c.update();
+  }, [focusKey, focusTileId]);
 
   // On touch devices (tablets, phones) Safari/Chrome can refuse the WebGL
   // context with `high-performance` powerPreference, leaving the canvas blank.

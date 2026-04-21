@@ -12,8 +12,15 @@ import { activePlayer } from '@/engine/selectors';
 // scheduler stays in sync.
 
 const ANIM_BUDGET_MS = 1000;
-const SETTLE_MS = 220;
+const SETTLE_MS = 140;
 const PHYSICS_BUDGET_MS = ANIM_BUDGET_MS - SETTLE_MS;
+// Soft alignment toward the target face. Crossfades in over the back portion
+// of the physics budget so the cube is essentially on the target by the time
+// it stops bouncing — eliminates the visible "snap" at settle time. Without
+// this, free physics ends in a random orientation that the closing slerp has
+// to undo all at once.
+const ALIGN_START_RATIO = 0.25; // fraction of physics budget at which alignment begins
+const ALIGN_RATE = 14; // per-second slerp rate at full strength (98% converged in ~0.28s)
 
 const FALL_HEIGHT = 4.2; // drop start height above the rest plane
 const REST_Y = 0.55; // sits a hair above the board surface
@@ -290,8 +297,28 @@ function stepPhysics(phys: DiePhysics, dt: number, floorY: number): void {
     const axis = phys.angVel.clone().divideScalar(len);
     const dq = new THREE.Quaternion().setFromAxisAngle(axis, len * dt);
     phys.q.premultiply(dq);
-    phys.q.normalize();
   }
+
+  // 5. Soft alignment toward the target face quaternion. Strength ramps
+  // quadratically from 0 to 1 over the back (1 - ALIGN_START_RATIO) of the
+  // physics budget — early frames are pure tumble, late frames bend the
+  // orientation toward the rolled face. By the time bounces die out, the
+  // cube is visually on the target, so the closing settle slerp has nothing
+  // visible to do.
+  const elapsedRatio =
+    (performance.now() - phys.startTime) / PHYSICS_BUDGET_MS;
+  if (elapsedRatio > ALIGN_START_RATIO) {
+    const u = (elapsedRatio - ALIGN_START_RATIO) / (1 - ALIGN_START_RATIO);
+    const strength = u * u;
+    const slerpAmount = Math.min(1, strength * dt * ALIGN_RATE);
+    const target = closestYawVariant(phys.q, phys.targetQ);
+    phys.q.slerp(target, slerpAmount);
+    // Strong angular damping during alignment — prevents residual spin from
+    // fighting the alignment slerp and creating end-of-fall wobble.
+    const dampHalfLife = 0.35 - 0.25 * strength; // 0.35s → 0.10s as strength → 1
+    phys.angVel.multiplyScalar(Math.pow(0.5, dt / Math.max(0.05, dampHalfLife)));
+  }
+  phys.q.normalize();
 }
 
 function beginSettle(phys: DiePhysics): void {

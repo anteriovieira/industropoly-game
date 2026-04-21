@@ -126,3 +126,9 @@ select:focus {
     transition-duration: 0.01ms !important;
   }
 }
+
+@media (max-width: 480px) {
+  .minimap-root {
+    display: none !important;
+  }
+}

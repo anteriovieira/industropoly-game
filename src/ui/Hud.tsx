@@ -3,6 +3,7 @@ import { useGameStore } from '@/state/gameStore';
 import { useUiStore } from '@/state/uiStore';
 import { Parchment } from './Parchment';
 import { MuteButton } from './MuteButton';
+import { Minimap } from './Minimap';
 import { Modal } from './modals/Modal';
 import { activePlayer, playerHoldings } from '@/engine/selectors';
 import { audio } from '@/lib/audio';
@@ -22,7 +23,7 @@ const PHASE_LABELS: Record<TurnPhase, string> = {
 };
 
 export function Hud() {
-  const state = useGameStore((s) => s.state)!;
+  const state = useGameStore((s) => s.state);
   const dispatch = useGameStore((s) => s.dispatch);
   const clearStore = useGameStore((s) => s.clear);
   const setJournalOpen = useUiStore((s) => s.setJournalOpen);
@@ -45,10 +46,11 @@ export function Hud() {
 
   function quitGame(): void {
     clearSave();
-    clearStore();
     setPhase('intro');
+    clearStore();
   }
 
+  if (!state) return null;
   const active = activePlayer(state);
   const phase = state.turnPhase;
   const inQuiz = phase === 'awaiting-quiz-answer';
@@ -145,6 +147,19 @@ export function Hud() {
           </p>
         </Modal>
       )}
+
+      {/* Minimap — bottom-left, above the control bar. Hidden on very narrow screens
+          (see .minimap-root media query in global.css) rather than shrunk below legibility. */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 96,
+          left: 16,
+          pointerEvents: 'auto',
+        }}
+      >
+        <Minimap />
+      </div>
 
       <div
         style={{

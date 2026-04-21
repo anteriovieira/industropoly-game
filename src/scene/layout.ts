@@ -88,3 +88,21 @@ export function tileSize(): { w: number; d: number; h: number } {
 export function boardStep(): number {
   return step;
 }
+
+// Projects a tile's world [x, z] into SVG viewBox coordinates for the minimap.
+// World origin is the board centre; SVG origin is the top-left, with y increasing downward.
+// The board spans [-half, +half] in world X and Z; we map to [0, viewBoxSize] with a small padding.
+export function toMinimapPoint(
+  tileId: number,
+  viewBoxSize: number,
+  padding = 0,
+): { x: number; y: number } {
+  const a = anchorForTile(tileId);
+  const usable = viewBoxSize - padding * 2;
+  const scale = usable / BOARD.size;
+  const x = padding + (a.x + half) * scale;
+  // World z increases "toward the camera" (forward); on the minimap we want the bottom-row
+  // tiles (positive z) to appear at the bottom, so y grows with z.
+  const y = padding + (a.z + half) * scale;
+  return { x, y };
+}
