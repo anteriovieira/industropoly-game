@@ -22,11 +22,13 @@ test('intro -> setup -> jogo, lança dados, responde pergunta e encerra turno', 
   // Quiz: pick first option, submit, then continue past the result panel.
   // Note: corner landings (rare) skip the quiz; we tolerate either.
   const responder = page.getByRole('button', { name: 'Responder' });
-  const encerrar = page.getByRole('button', { name: /Encerrar turno/ });
+  // "Próximo:" appears in the turn Parchment once the turn reaches the
+  // awaiting-end-turn phase. Used as a sentinel for that state.
+  const endTurnSentinel = page.getByText(/Próximo:/);
 
   await Promise.race([
     responder.waitFor({ timeout: 8000 }).catch(() => undefined),
-    encerrar.waitFor({ timeout: 8000 }).catch(() => undefined),
+    endTurnSentinel.waitFor({ timeout: 8000 }).catch(() => undefined),
   ]);
 
   if (await responder.isVisible().catch(() => false)) {
@@ -44,11 +46,13 @@ test('intro -> setup -> jogo, lança dados, responde pergunta e encerra turno', 
   await Promise.race([
     recusar.waitFor({ timeout: 4000 }).catch(() => undefined),
     continuar.waitFor({ timeout: 4000 }).catch(() => undefined),
-    encerrar.waitFor({ timeout: 4000 }).catch(() => undefined),
+    endTurnSentinel.waitFor({ timeout: 4000 }).catch(() => undefined),
   ]);
   if (await recusar.isVisible().catch(() => false)) await recusar.click();
   else if (await continuar.isVisible().catch(() => false)) await continuar.click();
 
-  // End turn (also covers the wrong-answer path which goes straight here).
-  await page.getByRole('button', { name: /Encerrar turno/ }).click();
+  // End turn via the combined Lançar button — in awaiting-end-turn it ends
+  // the current turn and auto-rolls for the next player.
+  await endTurnSentinel.waitFor({ timeout: 4000 });
+  await page.getByRole('button', { name: /Lançar →/ }).click();
 });

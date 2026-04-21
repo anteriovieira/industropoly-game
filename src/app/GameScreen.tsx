@@ -76,8 +76,30 @@ export function GameScreen() {
       if (e.code === 'Space' && state.turnPhase === 'awaiting-roll' && !p.inPrison) {
         e.preventDefault();
         dispatch({ type: 'ROLL_DICE' });
-      } else if (e.key.toLowerCase() === 'e' && state.turnPhase === 'awaiting-end-turn') {
+      } else if (
+        (e.key.toLowerCase() === 'e' || e.code === 'Space') &&
+        state.turnPhase === 'awaiting-end-turn' &&
+        state.pendingLandingResolved
+      ) {
+        e.preventDefault();
+        // End the current turn and auto-roll for whoever comes next (unless
+        // they're in prison — the reducer rejects ROLL_DICE in that case and
+        // the prison-decision UI takes over).
+        const doublesAgain =
+          !!state.lastRoll?.doubles &&
+          !p.inPrison &&
+          p.doublesStreak > 0 &&
+          p.doublesStreak < 3;
+        let nextIdx = state.activePlayerIndex;
+        if (!doublesAgain) {
+          for (let i = 0; i < state.players.length; i++) {
+            nextIdx = (nextIdx + 1) % state.players.length;
+            if (!state.players[nextIdx]!.bankrupt) break;
+          }
+        }
+        const next = state.players[nextIdx]!;
         dispatch({ type: 'END_TURN' });
+        if (!next.inPrison) dispatch({ type: 'ROLL_DICE' });
       } else if (e.key.toLowerCase() === 'b' && state.modal?.kind === 'tile-info') {
         dispatch({ type: 'BUY_TILE' });
       } else if (e.key.toLowerCase() === 'j') {

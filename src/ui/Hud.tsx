@@ -60,6 +60,48 @@ export function Hud() {
   const canEnd = phase === 'awaiting-end-turn' && state.pendingLandingResolved;
   const canInfo = (phase === 'awaiting-roll' || phase === 'awaiting-end-turn') && !state.modal;
 
+  // Who rolls next after the current turn ends. Respects the doubles rule:
+  // on an unbroken doubles streak (not in prison, streak < 3), the same
+  // player rolls again instead of advancing.
+  function computeNextRoller(): Player {
+    const doublesAgain =
+      !!state!.lastRoll?.doubles &&
+      !active.inPrison &&
+      active.doublesStreak > 0 &&
+      active.doublesStreak < 3;
+    if (doublesAgain) return active;
+    let idx = state!.activePlayerIndex;
+    for (let i = 0; i < state!.players.length; i++) {
+      idx = (idx + 1) % state!.players.length;
+      const p = state!.players[idx]!;
+      if (!p.bankrupt) return p;
+    }
+    return active;
+  }
+  const nextRoller = computeNextRoller();
+  const samePlayerAgain = nextRoller.id === active.id && phase === 'awaiting-end-turn';
+  const canRollButton = canRoll || canEnd;
+
+  function handleRoll(): void {
+    if (canEnd) {
+      dispatch({ type: 'END_TURN' });
+      // After END_TURN the next roller is the active player. Auto-roll for
+      // them unless they're in prison — in that case the reducer would
+      // reject ROLL_DICE and the prison-decision UI takes over.
+      if (!nextRoller.inPrison) {
+        dispatch({ type: 'ROLL_DICE' });
+      }
+    } else if (canRoll) {
+      dispatch({ type: 'ROLL_DICE' });
+    }
+  }
+
+  const rollLabel = canEnd
+    ? samePlayerAgain
+      ? `Lançar de novo (E)`
+      : `Lançar → ${nextRoller.name} (E)`
+    : 'Lançar (Espaço)';
+
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
       <div
@@ -174,20 +216,42 @@ export function Hud() {
           flexWrap: 'wrap',
         }}
       >
-        <Parchment padding="10px 14px" style={{ minWidth: 240 }}>
-          <div style={{ fontFamily: 'var(--font-display)' }}>
-            Turno {state.turn} — {active.name}
+        <Parchment padding="10px 14px" style={{ minWidth: 320 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {canEnd && !samePlayerAgain ? (
+                <>
+                  <div style={{ fontFamily: 'var(--font-display)' }}>
+                    Próximo: {nextRoller.name}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                    Turno {state.turn} concluído · {active.name}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontFamily: 'var(--font-display)' }}>
+                    Turno {state.turn} — {active.name}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                    {canEnd && samePlayerAgain
+                      ? 'Dupla! Mesmo jogador lança de novo'
+                      : `Fase: ${PHASE_LABELS[phase]}`}
+                  </div>
+                </>
+              )}
+            </div>
+            <button
+              className="primary"
+              disabled={!canRollButton}
+              onClick={handleRoll}
+              aria-label={rollLabel}
+              style={{ flexShrink: 0 }}
+            >
+              {rollLabel}
+            </button>
           </div>
-          <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>Fase: {PHASE_LABELS[phase]}</div>
         </Parchment>
-        <button
-          className="primary"
-          disabled={!canRoll}
-          onClick={() => dispatch({ type: 'ROLL_DICE' })}
-          aria-label="Lançar dados (Espaço)"
-        >
-          Lançar (Espaço)
-        </button>
         <button
           disabled={!canResolveMove}
           onClick={() => dispatch({ type: 'RESOLVE_MOVEMENT' })}
@@ -245,14 +309,6 @@ export function Hud() {
           title="Centralizar câmera (C)"
         >
           Centralizar (C)
-        </button>
-        <button
-          className="primary"
-          disabled={!canEnd}
-          onClick={() => dispatch({ type: 'END_TURN' })}
-          aria-label="Encerrar turno (E)"
-        >
-          Encerrar turno (E)
         </button>
         <MuteButton />
       </div>
