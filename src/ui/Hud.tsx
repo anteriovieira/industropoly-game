@@ -462,30 +462,60 @@ function PlayerCard({
             height: 10,
             borderRadius: 10,
             background: color,
+            flexShrink: 0,
           }}
         />
-        {player.name}
+        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {player.name}
+        </span>
+        <span
+          style={{
+            fontSize: '0.95rem',
+            fontVariantNumeric: 'tabular-nums',
+            fontFamily: 'var(--font-display)',
+          }}
+        >
+          R${player.cash}
+        </span>
         <span
           aria-hidden="true"
           style={{
-            marginLeft: 'auto',
-            fontSize: '0.85rem',
-            opacity: 0.6,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 22,
+            height: 22,
+            borderRadius: 4,
+            background: 'rgba(59,43,24,0.12)',
+            border: '1px solid rgba(59,43,24,0.35)',
+            fontSize: '0.9rem',
+            lineHeight: 1,
+            color: 'rgba(59,43,24,0.9)',
             transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
             transition: 'transform 120ms ease',
+            flexShrink: 0,
           }}
         >
           ▸
         </span>
       </button>
 
-      <div style={{ fontSize: '0.9rem' }}>R${player.cash}</div>
       <div
-        style={{ fontSize: '0.75rem', opacity: 0.75 }}
+        style={{
+          fontSize: '0.75rem',
+          opacity: 0.8,
+          marginTop: 4,
+          display: 'flex',
+          gap: 8,
+          flexWrap: 'wrap',
+        }}
         title="Acertos / erros / dicas"
       >
-        ✓ {player.quizStats.correct} · ✗ {player.quizStats.wrong}
-        {player.quizStats.hintsBought > 0 ? ` · 💡${player.quizStats.hintsBought}` : ''}
+        <span>✓ {player.quizStats.correct} acertos</span>
+        <span>✗ {player.quizStats.wrong} erros</span>
+        {player.quizStats.hintsBought > 0 && (
+          <span>💡 {player.quizStats.hintsBought} dicas</span>
+        )}
       </div>
       {player.inPrison && (
         <div style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>Preso</div>
@@ -544,21 +574,26 @@ function PlayerCard({
               </div>
             </>
           )}
-          <button
-            onClick={onOpenDetails}
-            style={{
-              marginTop: 8,
-              all: 'unset',
-              cursor: 'pointer',
-              fontSize: '0.75rem',
-              color: color,
-              borderBottom: `1px dashed ${color}`,
-            }}
-          >
-            Ver detalhes (A)
-          </button>
         </div>
       )}
+
+      <button
+        onClick={onOpenDetails}
+        style={{
+          marginTop: 8,
+          width: '100%',
+          cursor: 'pointer',
+          fontSize: '0.78rem',
+          padding: '6px 8px',
+          background: 'rgba(59,43,24,0.08)',
+          color: 'rgba(59,43,24,0.95)',
+          border: `1px solid ${color}`,
+          borderRadius: 4,
+          fontFamily: 'var(--font-display)',
+        }}
+      >
+        Ver detalhes (A)
+      </button>
     </Parchment>
     </div>
   );

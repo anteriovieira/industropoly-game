@@ -95,7 +95,13 @@ function OwnershipBadge({
   // Pip count: tiers 1..4 render as N houses; tier 5 renders as one bigger "hotel".
   const pipCount = tier >= 5 ? 1 : Math.max(0, Math.min(4, tier));
   const isHotel = tier >= 5;
-  const pipSpacing = stripWidth / 5;
+  // Reserve the left end of the strip for the ownership flag so it does not
+  // overlap the pips/hotel as tiers grow.
+  const flagReserve = stripWidth * 0.22;
+  const pipAreaWidth = stripWidth - flagReserve;
+  const pipAreaCenter = flagReserve / 2;
+  const pipSpacing = pipAreaWidth / 5;
+  const flagX = -stripWidth / 2 + flagReserve / 2;
 
   return (
     <group>
@@ -110,11 +116,22 @@ function OwnershipBadge({
         />
       </mesh>
 
+      {/* Ownership flag — always visible when the tile is owned, so players
+          can read acquisitions at a glance even before any upgrade. */}
+      <OwnershipFlag
+        color={ownerColor}
+        mortgaged={mortgaged}
+        baseX={flagX}
+        baseY={stripY + stripHeight / 2}
+        baseZ={stripZ}
+        stripDepth={stripDepth}
+      />
+
       {/* Tier pips — small cubes (houses) or one larger (hotel) */}
       {!mortgaged && pipCount > 0 && !isHotel && (
         <>
           {Array.from({ length: pipCount }).map((_, i) => {
-            const xOffset = (i - (pipCount - 1) / 2) * pipSpacing;
+            const xOffset = pipAreaCenter + (i - (pipCount - 1) / 2) * pipSpacing;
             return (
               <mesh key={i} position={[xOffset, pipY, pipZ]} castShadow>
                 <boxGeometry args={[pipSize, pipHeight, pipSize]} />
@@ -126,8 +143,8 @@ function OwnershipBadge({
       )}
 
       {!mortgaged && isHotel && (
-        <mesh position={[0, pipY, pipZ]} castShadow>
-          <boxGeometry args={[pipSize * 2.6, pipHeight * 1.3, pipSize * 1.1]} />
+        <mesh position={[pipAreaCenter, pipY, pipZ]} castShadow>
+          <boxGeometry args={[pipAreaWidth * 0.7, pipHeight * 1.3, pipSize * 1.1]} />
           <meshStandardMaterial color="#8a2a1b" roughness={0.55} />
         </mesh>
       )}
@@ -139,6 +156,61 @@ function OwnershipBadge({
           <meshStandardMaterial color="#1a120a" roughness={0.7} />
         </mesh>
       )}
+    </group>
+  );
+}
+
+interface FlagProps {
+  color: string;
+  mortgaged: boolean;
+  baseX: number;
+  baseY: number;
+  baseZ: number;
+  stripDepth: number;
+}
+
+function OwnershipFlag({ color, mortgaged, baseX, baseY, baseZ, stripDepth }: FlagProps) {
+  const poleHeight = 0.38;
+  const poleRadius = stripDepth * 0.08;
+  const flagWidth = stripDepth * 1.05;
+  const flagHeight = poleHeight * 0.42;
+  const flagThickness = 0.01;
+  // Flag flies toward +x (outward along the strip), its inner edge touching
+  // the pole.
+  const flagCenterX = baseX + poleRadius + flagWidth / 2;
+  const flagCenterY = baseY + poleHeight - flagHeight / 2 - 0.01;
+
+  return (
+    <group>
+      {/* Base cap — disc that grounds the pole on the strip */}
+      <mesh position={[baseX, baseY + 0.008, baseZ]} castShadow>
+        <cylinderGeometry args={[poleRadius * 1.8, poleRadius * 1.8, 0.016, 10]} />
+        <meshStandardMaterial color="#1a120a" roughness={0.75} />
+      </mesh>
+
+      {/* Pole */}
+      <mesh position={[baseX, baseY + poleHeight / 2, baseZ]} castShadow>
+        <cylinderGeometry args={[poleRadius, poleRadius, poleHeight, 8]} />
+        <meshStandardMaterial color="#3b2b18" roughness={0.6} />
+      </mesh>
+
+      {/* Pennant — rectangular flag in the owner's color */}
+      <mesh position={[flagCenterX, flagCenterY, baseZ]} castShadow>
+        <boxGeometry args={[flagWidth, flagHeight, flagThickness]} />
+        <meshStandardMaterial
+          color={color}
+          transparent={mortgaged}
+          opacity={mortgaged ? 0.35 : 1}
+          roughness={0.5}
+          side={2}
+        />
+      </mesh>
+
+      {/* Finial — small sphere on top of the pole */}
+      <mesh position={[baseX, baseY + poleHeight + poleRadius, baseZ]} castShadow>
+        <sphereGeometry args={[poleRadius * 1.6, 10, 8]} />
+        <meshStandardMaterial color="#c9a96b" roughness={0.4} metalness={0.3} />
+      </mesh>
     </group>
   );
 }
