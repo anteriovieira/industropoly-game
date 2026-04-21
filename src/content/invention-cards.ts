@@ -5,7 +5,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-watt-engine',
     deck: 'invention',
     title: 'Condensador Separado de Watt',
-    effectText: 'Sua patente rende frutos — receba £100.',
+    effectText: 'Sua patente rende frutos — receba R$100.',
     effect: { kind: 'gain', amount: 100 },
     education: {
       title: 'O Condensador Separado de James Watt',
@@ -19,7 +19,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-spinning-jenny',
     deck: 'invention',
     title: 'Spinning Jenny de Hargreaves',
-    effectText: 'Venda seu primeiro protótipo — receba £50.',
+    effectText: 'Venda seu primeiro protótipo — receba R$50.',
     effect: { kind: 'gain', amount: 50 },
     education: {
       title: 'Hargreaves e a Spinning Jenny',
@@ -33,7 +33,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-water-frame',
     deck: 'invention',
     title: 'Máquina Hidráulica de Arkwright',
-    effectText: 'Avance até a Tecelagem de Cromford. Se passar pelo Início, receba £200.',
+    effectText: 'Avance até a Tecelagem de Cromford. Se passar pelo Início, receba R$200.',
     effect: { kind: 'move-to', tileId: 1, passStartAward: true },
     education: {
       title: 'A Máquina Hidráulica',
@@ -47,7 +47,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-cotton-gin',
     deck: 'invention',
     title: 'Descaroçador de Algodão de Whitney',
-    effectText: 'Algodão bruto barato inunda o mercado — receba £75.',
+    effectText: 'Algodão bruto barato inunda o mercado — receba R$75.',
     effect: { kind: 'gain', amount: 75 },
     education: {
       title: 'O Descaroçador de Algodão de Eli Whitney',
@@ -75,7 +75,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-puddling',
     deck: 'invention',
     title: 'Processo de Pudelagem de Cort',
-    effectText: 'Ferro maleável em larga escala — receba £150.',
+    effectText: 'Ferro maleável em larga escala — receba R$150.',
     effect: { kind: 'gain', amount: 150 },
     education: {
       title: 'Pudelagem e Laminação',
@@ -89,7 +89,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-locomotion',
     deck: 'invention',
     title: 'Locomotion No. 1 de Stephenson',
-    effectText: 'Suas ações na Ferrovia Stockton-Darlington valorizam — receba £100.',
+    effectText: 'Suas ações na Ferrovia Stockton-Darlington valorizam — receba R$100.',
     effect: { kind: 'gain', amount: 100 },
     education: {
       title: 'A Ferrovia Stockton e Darlington',
@@ -103,7 +103,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-macadam',
     deck: 'invention',
     title: 'Pavimentação de McAdam',
-    effectText: 'Avance até o Canal de Bridgewater. Se passar pelo Início, receba £200.',
+    effectText: 'Avance até o Canal de Bridgewater. Se passar pelo Início, receba R$200.',
     effect: { kind: 'move-to', tileId: 5, passStartAward: true },
     education: {
       title: 'As Estradas de John Loudon McAdam',
@@ -117,7 +117,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-gas-lighting',
     deck: 'invention',
     title: 'Iluminação a Gás de Murdoch',
-    effectText: 'Sua fábrica produz sob a luz do gás — receba £80.',
+    effectText: 'Sua fábrica produz sob a luz do gás — receba R$80.',
     effect: { kind: 'gain', amount: 80 },
     education: {
       title: 'William Murdoch e o Gás de Carvão',
@@ -131,7 +131,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-steam-hammer',
     deck: 'invention',
     title: 'Martelo a Vapor de Nasmyth',
-    effectText: 'Contratos de forja chegam em massa — receba £120.',
+    effectText: 'Contratos de forja chegam em massa — receba R$120.',
     effect: { kind: 'gain', amount: 120 },
     education: {
       title: 'O Martelo a Vapor',
@@ -145,7 +145,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-chronometer',
     deck: 'invention',
     title: 'Cronômetro Marítimo de Harrison',
-    effectText: 'Seus interesses marítimos prosperam — receba £60.',
+    effectText: 'Seus interesses marítimos prosperam — receba R$60.',
     effect: { kind: 'gain', amount: 60 },
     education: {
       title: 'John Harrison e a Longitude',
@@ -159,7 +159,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-battery',
     deck: 'invention',
     title: 'Pilha de Volta',
-    effectText: 'Você se aventura na nova ciência elétrica — receba £40.',
+    effectText: 'Você se aventura na nova ciência elétrica — receba R$40.',
     effect: { kind: 'gain', amount: 40 },
     education: {
       title: 'A Pilha Voltaica',
@@ -173,7 +173,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-threshing',
     deck: 'invention',
     title: 'Debulhadora de Meikle',
-    effectText: 'Avance até a Sede da Companhia das Índias Orientais. Se passar pelo Início, receba £200.',
+    effectText: 'Avance até a Sede da Companhia das Índias Orientais. Se passar pelo Início, receba R$200.',
     effect: { kind: 'move-to', tileId: 39, passStartAward: true },
     education: {
       title: 'Mecanizando a Colheita',
@@ -187,7 +187,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-chlorine-bleach',
     deck: 'invention',
     title: 'Branqueamento com Cloro',
-    effectText: 'Campos de branqueamento liberados — receba £70.',
+    effectText: 'Campos de branqueamento liberados — receba R$70.',
     effect: { kind: 'gain', amount: 70 },
     education: {
       title: 'O Branqueador de Cloro de Berthollet',
@@ -201,7 +201,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-photography',
     deck: 'invention',
     title: 'Fotografia de Daguerre',
-    effectText: 'A era se vê — receba £30.',
+    effectText: 'A era se vê — receba R$30.',
     effect: { kind: 'gain', amount: 30 },
     education: {
       title: 'O Daguerreótipo',
@@ -215,7 +215,7 @@ export const INVENTION_CARDS: readonly Card[] = [
     id: 'inv-anaesthesia',
     deck: 'invention',
     title: 'Anestesia com Éter',
-    effectText: 'Contratos hospitalares — receba £90.',
+    effectText: 'Contratos hospitalares — receba R$90.',
     effect: { kind: 'gain', amount: 90 },
     education: {
       title: 'Éter e Medicina Industrial',

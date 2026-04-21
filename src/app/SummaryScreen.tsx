@@ -44,7 +44,7 @@ export function SummaryScreen() {
         <ol>
           {state.players.map((p) => (
             <li key={p.id}>
-              {p.name}: {p.bankrupt ? <em>falido</em> : <>£{p.cash}</>}
+              {p.name}: {p.bankrupt ? <em>falido</em> : <>R${p.cash}</>}
             </li>
           ))}
         </ol>
@@ -57,7 +57,7 @@ export function SummaryScreen() {
               <th style={{ padding: '4px 6px' }}>Acertos</th>
               <th style={{ padding: '4px 6px' }}>Erros</th>
               <th style={{ padding: '4px 6px' }}>Dicas</th>
-              <th style={{ padding: '4px 6px' }}>£ em dicas</th>
+              <th style={{ padding: '4px 6px' }}>R$ em dicas</th>
             </tr>
           </thead>
           <tbody>
@@ -67,7 +67,7 @@ export function SummaryScreen() {
                 <td style={{ padding: '4px 6px' }}>{p.quizStats.correct}</td>
                 <td style={{ padding: '4px 6px' }}>{p.quizStats.wrong}</td>
                 <td style={{ padding: '4px 6px' }}>{p.quizStats.hintsBought}</td>
-                <td style={{ padding: '4px 6px' }}>£{p.quizStats.cashSpentOnHints}</td>
+                <td style={{ padding: '4px 6px' }}>R${p.quizStats.cashSpentOnHints}</td>
               </tr>
             ))}
           </tbody>

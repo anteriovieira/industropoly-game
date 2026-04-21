@@ -27,7 +27,7 @@ export function PrisonModal() {
             disabled={p.cash < PRISON_FEE}
             onClick={() => dispatch({ type: 'PAY_PRISON_FEE' })}
           >
-            Pagar £{PRISON_FEE}
+            Pagar R${PRISON_FEE}
           </button>
         </>
       }
@@ -38,7 +38,7 @@ export function PrisonModal() {
       <ul>
         <li>Lançar uma dupla — até {p.prisonRollsLeft} tentativas nesta permanência.</li>
         <li>Usar uma carta de Perdão Real — você possui {p.getOutCards}.</li>
-        <li>Pagar a taxa de £{PRISON_FEE} de uma vez.</li>
+        <li>Pagar a taxa de R${PRISON_FEE} de uma vez.</li>
       </ul>
     </Modal>
   );

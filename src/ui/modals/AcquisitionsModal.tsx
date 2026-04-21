@@ -198,10 +198,10 @@ function SummaryHeader({
       }}
     >
       <SummaryStat label={playerName} value="" />
-      <SummaryStat label="Caixa" value={`£${cash}`} />
+      <SummaryStat label="Caixa" value={`R$${cash}`} />
       <SummaryStat label="Aquisições" value={String(tileCount)} />
-      <SummaryStat label="Hipoteca disponível" value={`£${mortgageValueAvailable}`} />
-      <SummaryStat label="Aluguel atual" value={`£${rentIncome}`} />
+      <SummaryStat label="Hipoteca disponível" value={`R$${mortgageValueAvailable}`} />
+      <SummaryStat label="Aluguel atual" value={`R$${rentIncome}`} />
     </div>
   );
 }
@@ -266,7 +266,7 @@ function SectorGroup({ state, group }: { state: GameState; group: PlayerSectorGr
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            £{sectorRent}/turno
+            R${sectorRent}/turno
           </span>
         </div>
         <div
@@ -339,7 +339,7 @@ function IndustryRow({
           { label: tierLabel, key: 'tier' },
           ...(mortgaged ? [{ label: 'Hipotecado', key: 'mortgaged', danger: true }] : []),
         ]}
-        rent={`£${rent}`}
+        rent={`R$${rent}`}
       />
     </Row>
   );
@@ -353,7 +353,7 @@ function TransportRow({ state, holding }: { state: GameState; holding: PlayerSim
       <RowMain title={tile.name} subtitle={`${tile.education.title} — ${tile.education.date}`} />
       <RowMeta
         chips={holding.mortgaged ? [{ label: 'Hipotecado', key: 'mortgaged', danger: true }] : []}
-        rent={`£${rent}`}
+        rent={`R$${rent}`}
       />
     </Row>
   );
@@ -380,7 +380,7 @@ function UtilityRow({
           { label: `×${multiplier}`, key: 'mult' },
           ...(holding.mortgaged ? [{ label: 'Hipotecado', key: 'mortgaged', danger: true }] : []),
         ]}
-        rent={`£${rent}`}
+        rent={`R$${rent}`}
         rentTitle={UTILITY_RENT_HINT}
         caption={UTILITY_RENT_HINT}
       />

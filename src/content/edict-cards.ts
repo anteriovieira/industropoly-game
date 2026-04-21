@@ -5,7 +5,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-factory-act',
     deck: 'edict',
     title: 'Lei Fabril de 1833',
-    effectText: 'O Parlamento limita o trabalho infantil. Pague £50 por indústria e £20 por melhoria que possuir.',
+    effectText: 'O Parlamento limita o trabalho infantil. Pague R$50 por indústria e R$20 por melhoria que possuir.',
     effect: { kind: 'pay-per-property', perIndustry: 50, perUpgrade: 20 },
     education: {
       title: 'A Lei Fabril',
@@ -19,7 +19,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-enclosure',
     deck: 'edict',
     title: 'Lei de Cercamento',
-    effectText: 'Terras comuns são cercadas em seu benefício — receba £120.',
+    effectText: 'Terras comuns são cercadas em seu benefício — receba R$120.',
     effect: { kind: 'gain', amount: 120 },
     education: {
       title: 'Cercamento Parlamentar',
@@ -33,7 +33,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-poor-law',
     deck: 'edict',
     title: 'Nova Lei dos Pobres',
-    effectText: 'Contribuintes pagam uma nova taxa dos pobres — perca £40.',
+    effectText: 'Contribuintes pagam uma nova taxa dos pobres — perca R$40.',
     effect: { kind: 'pay', amount: 40 },
     education: {
       title: 'A Reforma da Lei dos Pobres',
@@ -47,7 +47,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-chartism',
     deck: 'edict',
     title: 'Petição Cartista',
-    effectText: 'Os trabalhadores se organizam — receba £20 de cada outro jogador.',
+    effectText: 'Os trabalhadores se organizam — receba R$20 de cada outro jogador.',
     effect: { kind: 'collect-from-each', amount: 20 },
     education: {
       title: 'A Carta do Povo',
@@ -61,7 +61,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-anti-slavery',
     deck: 'edict',
     title: 'Abolição do Tráfico de Escravos',
-    effectText: 'O tráfico é proibido — perca £60 enquanto os mercados se reorganizam.',
+    effectText: 'O tráfico é proibido — perca R$60 enquanto os mercados se reorganizam.',
     effect: { kind: 'pay', amount: 60 },
     education: {
       title: 'Abolição do Tráfico de Escravos',
@@ -75,7 +75,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-corn-laws',
     deck: 'edict',
     title: 'Leis dos Cereais',
-    effectText: 'Preços dos grãos disparam — pague £80 por salários mais altos.',
+    effectText: 'Preços dos grãos disparam — pague R$80 por salários mais altos.',
     effect: { kind: 'pay', amount: 80 },
     education: {
       title: 'As Leis dos Cereais',
@@ -89,7 +89,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-reform-act',
     deck: 'edict',
     title: 'Grande Lei de Reforma',
-    effectText: 'Manchester finalmente tem um parlamentar — receba £100.',
+    effectText: 'Manchester finalmente tem um parlamentar — receba R$100.',
     effect: { kind: 'gain', amount: 100 },
     education: {
       title: 'A Grande Lei de Reforma',
@@ -103,7 +103,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-municipal',
     deck: 'edict',
     title: 'Lei das Corporações Municipais',
-    effectText: 'Novos conselhos municipais investem em você — receba £50.',
+    effectText: 'Novos conselhos municipais investem em você — receba R$50.',
     effect: { kind: 'gain', amount: 50 },
     education: {
       title: 'A Lei das Corporações Municipais',
@@ -117,7 +117,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-pitt-tax',
     deck: 'edict',
     title: 'Imposto de Renda de Pitt',
-    effectText: 'Imposto de guerra — pague £60.',
+    effectText: 'Imposto de guerra — pague R$60.',
     effect: { kind: 'pay', amount: 60 },
     education: {
       title: 'O Primeiro Imposto de Renda da Grã-Bretanha',
@@ -145,7 +145,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-luddite',
     deck: 'edict',
     title: 'Ataque Ludita',
-    effectText: 'Teares são destruídos durante a noite — pague £70.',
+    effectText: 'Teares são destruídos durante a noite — pague R$70.',
     effect: { kind: 'pay', amount: 70 },
     education: {
       title: 'Os Luditas',
@@ -159,7 +159,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-cholera',
     deck: 'edict',
     title: 'Surto de Cólera',
-    effectText: 'Pague por água limpa — £40.',
+    effectText: 'Pague por água limpa — R$40.',
     effect: { kind: 'pay', amount: 40 },
     education: {
       title: 'Cidades Industriais e Cólera',
@@ -173,7 +173,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-pension',
     deck: 'edict',
     title: 'Pagamento de Sociedade de Auxílio Mútuo',
-    effectText: 'Dividendos de auxílio mútuo — receba £30.',
+    effectText: 'Dividendos de auxílio mútuo — receba R$30.',
     effect: { kind: 'gain', amount: 30 },
     education: {
       title: 'Sociedades de Auxílio Mútuo',
@@ -187,7 +187,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-peterloo',
     deck: 'edict',
     title: 'Massacre de Peterloo',
-    effectText: 'Você contribui para o fundo das vítimas — pague £50.',
+    effectText: 'Você contribui para o fundo das vítimas — pague R$50.',
     effect: { kind: 'pay', amount: 50 },
     education: {
       title: 'Peterloo',
@@ -215,7 +215,7 @@ export const EDICT_CARDS: readonly Card[] = [
     id: 'edict-railway-mania',
     deck: 'edict',
     title: 'Mania das Ferrovias',
-    effectText: 'Suas ações disparam — receba £150.',
+    effectText: 'Suas ações disparam — receba R$150.',
     effect: { kind: 'gain', amount: 150 },
     education: {
       title: 'Mania das Ferrovias',

@@ -211,7 +211,7 @@ function handleResolveMovement(state: GameState): GameState {
   }
 
   let s = updateActivePlayer(state, (pl) => ({ ...pl, position: pos, cash: pl.cash + cashDelta }));
-  if (cashDelta > 0) s = appendLog(s, `${p.name} passou pelo Início e recebeu £${cashDelta}.`);
+  if (cashDelta > 0) s = appendLog(s, `${p.name} passou pelo Início e recebeu R$${cashDelta}.`);
 
   // Track the landed tile (consumed by future features; not used by routing).
   s = { ...s, lastResolvedTileId: pos };
@@ -321,7 +321,7 @@ function handleAckModal(state: GameState): GameState {
     const payable = Math.min(m.owed, p.cash + netWorthExcludingCash(state, p.id));
     // For v1 simplicity: auto-liquidate if needed, else bankruptcy.
     if (p.cash + netWorthExcludingCash(state, p.id) < m.owed) {
-      let s = appendLog(state, `${p.name} não pode pagar £${m.owed} de aluguel — falido.`);
+      let s = appendLog(state, `${p.name} não pode pagar R$${m.owed} de aluguel — falido.`);
       s = markBankrupt(s, p.id);
       s = updatePlayer(s, o.owner, (ow) => ({ ...ow, cash: ow.cash + payable }));
       s = {
@@ -334,19 +334,19 @@ function handleAckModal(state: GameState): GameState {
     }
     let s = updateActivePlayer(state, (pl) => ({ ...pl, cash: pl.cash - m.owed }));
     s = updatePlayer(s, o.owner, (ow) => ({ ...ow, cash: ow.cash + m.owed }));
-    s = appendLog(s, `${p.name} pagou £${m.owed} de aluguel.`);
+    s = appendLog(s, `${p.name} pagou R$${m.owed} de aluguel.`);
     return { ...s, modal: null, pendingLandingResolved: true, turnPhase: 'awaiting-end-turn' };
   }
 
   if (m.kind === 'tax') {
     const p = selActive(state);
     if (p.cash < m.owed) {
-      let s = appendLog(state, `${p.name} não pode pagar o imposto de £${m.owed} — falido.`);
+      let s = appendLog(state, `${p.name} não pode pagar o imposto de R$${m.owed} — falido.`);
       s = markBankrupt(s, p.id);
       return checkWin({ ...s, modal: null, pendingLandingResolved: true, turnPhase: 'awaiting-end-turn' });
     }
     let s = updateActivePlayer(state, (pl) => ({ ...pl, cash: pl.cash - m.owed }));
-    s = appendLog(s, `${p.name} pagou £${m.owed} de imposto.`);
+    s = appendLog(s, `${p.name} pagou R$${m.owed} de imposto.`);
     return { ...s, modal: null, pendingLandingResolved: true, turnPhase: 'awaiting-end-turn' };
   }
 
@@ -400,7 +400,7 @@ function handleBuyTile(state: GameState): GameState {
   const tiles = { ...state.tiles, [t.id]: { ...o, owner: p.id } };
   let s: GameState = { ...state, tiles };
   s = updateActivePlayer(s, (pl) => ({ ...pl, cash: pl.cash - t.price }));
-  s = appendLog(s, `${p.name} comprou ${t.name} por £${t.price}.`);
+  s = appendLog(s, `${p.name} comprou ${t.name} por R$${t.price}.`);
   return { ...s, modal: null, pendingLandingResolved: true, turnPhase: 'awaiting-end-turn' };
 }
 
@@ -486,7 +486,7 @@ function handleBuyHint(state: GameState, hintId: string): GameState {
       cashSpentOnHints: pl.quizStats.cashSpentOnHints + hint.priceCash,
     },
   }));
-  s = appendLog(s, `${p.name} comprou uma dica por £${hint.priceCash}.`);
+  s = appendLog(s, `${p.name} comprou uma dica por R$${hint.priceCash}.`);
   return s;
 }
 
@@ -586,7 +586,7 @@ function handleMortgage(state: GameState, tileId: TileId): GameState {
   const tiles = { ...state.tiles, [tileId]: { ...o, mortgaged: true } };
   let s: GameState = { ...state, tiles };
   s = updateActivePlayer(s, (pl) => ({ ...pl, cash: pl.cash + t.mortgage }));
-  return appendLog(s, `${p.name} hipotecou ${t.name} por £${t.mortgage}.`);
+  return appendLog(s, `${p.name} hipotecou ${t.name} por R$${t.mortgage}.`);
 }
 
 function handleRedeem(state: GameState, tileId: TileId): GameState {
@@ -601,7 +601,7 @@ function handleRedeem(state: GameState, tileId: TileId): GameState {
   const tiles = { ...state.tiles, [tileId]: { ...o, mortgaged: false } };
   let s: GameState = { ...state, tiles };
   s = updateActivePlayer(s, (pl) => ({ ...pl, cash: pl.cash - cost }));
-  return appendLog(s, `${p.name} resgatou ${t.name} por £${cost}.`);
+  return appendLog(s, `${p.name} resgatou ${t.name} por R$${cost}.`);
 }
 
 // DRAW_CARD / APPLY_CARD --------------------------------------------------
@@ -665,7 +665,7 @@ function applyCardEffect(state: GameState, effect: CardEffect, card: Card): Game
       return updateActivePlayer(state, (pl) => ({ ...pl, cash: pl.cash + effect.amount }));
     case 'pay': {
       if (p.cash + netWorthExcludingCash(state, p.id) < effect.amount) {
-        let s = appendLog(state, `${p.name} não pode pagar £${effect.amount} — falido.`);
+        let s = appendLog(state, `${p.name} não pode pagar R$${effect.amount} — falido.`);
         s = markBankrupt(s, p.id);
         return checkWin(s);
       }
@@ -714,12 +714,12 @@ function applyCardEffect(state: GameState, effect: CardEffect, card: Card): Game
       const owed = industries * effect.perIndustry + upgrades * effect.perUpgrade;
       if (owed <= 0) return state;
       if (p.cash + netWorthExcludingCash(state, p.id) < owed) {
-        let s = appendLog(state, `${p.name} deve £${owed} — falido.`);
+        let s = appendLog(state, `${p.name} deve R$${owed} — falido.`);
         s = markBankrupt(s, p.id);
         return checkWin(s);
       }
       let s = updateActivePlayer(state, (pl) => ({ ...pl, cash: pl.cash - owed }));
-      return appendLog(s, `${p.name} pagou £${owed} (${industries} indústrias + ${upgrades} melhorias).`);
+      return appendLog(s, `${p.name} pagou R$${owed} (${industries} indústrias + ${upgrades} melhorias).`);
     }
     case 'collect-from-each': {
       let total = 0;
@@ -765,7 +765,7 @@ function handlePayPrisonFee(state: GameState): GameState {
     prisonRollsLeft: 0,
     cash: pl.cash - PRISON_FEE,
   }));
-  s = appendLog(s, `${p.name} pagou a taxa de £${PRISON_FEE} da prisão.`);
+  s = appendLog(s, `${p.name} pagou a taxa de R$${PRISON_FEE} da prisão.`);
   return { ...s, turnPhase: 'awaiting-roll' };
 }
 
@@ -813,7 +813,7 @@ function handlePrisonRoll(state: GameState): GameState {
       prisonRollsLeft: 0,
       cash: pl.cash - PRISON_FEE,
     }));
-    s = appendLog(s, `${p.name} foi forçado(a) a pagar a taxa de £${PRISON_FEE}.`);
+    s = appendLog(s, `${p.name} foi forçado(a) a pagar a taxa de R$${PRISON_FEE}.`);
     // Then move and resolve.
     s = { ...s, turnPhase: 'moving' };
     s = handleResolveMovement(s);

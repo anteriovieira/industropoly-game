@@ -37,7 +37,7 @@ export function TileInfoModal({ tileId, readOnly = false }: { tileId: number; re
                 Recusar
               </button>
               <button className="primary" onClick={() => dispatch({ type: 'BUY_TILE' })}>
-                Comprar por £{'price' in tile ? tile.price : 0}
+                Comprar por R${'price' in tile ? tile.price : 0}
               </button>
             </>
           )}
@@ -46,7 +46,7 @@ export function TileInfoModal({ tileId, readOnly = false }: { tileId: number; re
               className="primary"
               onClick={() => dispatch({ type: 'UPGRADE_TILE', tileId })}
             >
-              Melhorar (£{tile.upgradeCost})
+              Melhorar (R${tile.upgradeCost})
             </button>
           )}
           {!canBuy && (
@@ -91,18 +91,18 @@ function TileBody({ tile }: { tile: Tile }) {
           }}
         >
           <div>
-            <strong>Preço:</strong> £{tile.price}
+            <strong>Preço:</strong> R${tile.price}
           </div>
           {tile.role === 'industry' && (
             <div>
-              <strong>Aluguel:</strong> £{tile.rents[0]} base; até £{tile.rents[5]} no nível Império.
-              Melhoria £{tile.upgradeCost}.
+              <strong>Aluguel:</strong> R${tile.rents[0]} base; até R${tile.rents[5]} no nível Império.
+              Melhoria R${tile.upgradeCost}.
             </div>
           )}
           {tile.role === 'transport' && (
             <div>
-              <strong>Aluguel:</strong> por rotas possuídas — £{tile.rentByCount[0]} / £{tile.rentByCount[1]} /
-              £{tile.rentByCount[2]} / £{tile.rentByCount[3]}.
+              <strong>Aluguel:</strong> por rotas possuídas — R${tile.rentByCount[0]} / R${tile.rentByCount[1]} /
+              R${tile.rentByCount[2]} / R${tile.rentByCount[3]}.
             </div>
           )}
           {tile.role === 'utility' && (

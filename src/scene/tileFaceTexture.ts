@@ -52,11 +52,11 @@ export function tileFaceTexture(tile: Tile): THREE.CanvasTexture {
   if ('price' in tile) {
     ctx.font = 'italic 20px "IM Fell English", Georgia, serif';
     ctx.fillStyle = '#4a2b10';
-    ctx.fillText(`£${tile.price}`, W / 2, H - 16);
+    ctx.fillText(`R$${tile.price}`, W / 2, H - 16);
   } else if (tile.role === 'tax') {
     ctx.font = 'italic 18px "IM Fell English", Georgia, serif';
     ctx.fillStyle = '#6a2a1b';
-    ctx.fillText(`Pay £${tile.amount}`, W / 2, H - 16);
+    ctx.fillText(`Pagar R$${tile.amount}`, W / 2, H - 16);
   }
 
   const tex = new THREE.CanvasTexture(canvas);
@@ -142,10 +142,10 @@ function drawCoin(ctx: CanvasRenderingContext2D): void {
   ctx.beginPath();
   ctx.arc(0, 0, 22, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.font = '700 22px "IM Fell English", serif';
+  ctx.font = '700 18px "IM Fell English", serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('£', 0, 2);
+  ctx.fillText('R$', 0, 2);
 }
 function drawLightbulb(ctx: CanvasRenderingContext2D): void {
   ctx.beginPath();

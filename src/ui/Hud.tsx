@@ -352,7 +352,7 @@ function PlayerCard({
         </span>
       </button>
 
-      <div style={{ fontSize: '0.9rem' }}>£{player.cash}</div>
+      <div style={{ fontSize: '0.9rem' }}>R${player.cash}</div>
       <div
         style={{ fontSize: '0.75rem', opacity: 0.75 }}
         title="Acertos / erros / dicas"
@@ -386,7 +386,7 @@ function PlayerCard({
                 }}
               >
                 <span>{holdings.totals.tileCount} tiles</span>
-                <span>£{holdings.totals.rentIncome}/turno</span>
+                <span>R${holdings.totals.rentIncome}/turno</span>
               </div>
               <div style={{ display: 'grid', gap: 4 }}>
                 {holdings.industriesBySector.map((g) => (

@@ -25,7 +25,7 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run the dev server and verify: token dots track movement; active player's tile is highlighted after landing; clicking the minimap pans the 3D camera to the active player's tile; dots for players on the same tile remain distinguishable.
-- [ ] 5.2 Verify keyboard operability: tab to the minimap, press Enter/Space, and confirm the camera focuses.
-- [ ] 5.3 Verify a bankrupt player's dot disappears from the minimap (simulate via test game or bankruptcy action).
-- [ ] 5.4 Run `npm run lint` and `npm test` and fix any issues the new files introduce.
+- [ ] 5.1 Run the dev server and verify: token dots track movement; active player's tile is highlighted after landing; clicking the minimap pans the 3D camera to the active player's tile; dots for players on the same tile remain distinguishable. _(needs browser verification by the user)_
+- [ ] 5.2 Verify keyboard operability: tab to the minimap, press Enter/Space, and confirm the camera focuses. _(needs browser verification by the user)_
+- [ ] 5.3 Verify a bankrupt player's dot disappears from the minimap (simulate via test game or bankruptcy action). _(needs browser verification by the user)_
+- [x] 5.4 Run `npm run lint` and `npm test` and fix any issues the new files introduce. _(npm test passes; `npm run lint` is broken project-wide due to a pre-existing ESLint v9 config migration issue, not caused by this change; `npx tsc --noEmit` is clean)_

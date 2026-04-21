@@ -16,15 +16,15 @@ export function RentModal({ tileId, owed }: { tileId: number; owed: number }) {
     <Modal
       title={`Aluguel devido em ${tile.name}`}
       onConfirm={() => dispatch({ type: 'ACK_MODAL' })}
-      confirmLabel={canAfford ? `Pagar £${owed}` : 'Quitar dívida'}
+      confirmLabel={canAfford ? `Pagar R$${owed}` : 'Quitar dívida'}
       dismissible={false}
     >
       <p>
         <strong>{owner?.name}</strong> é dono(a) de {tile.name}. {p.name} deve{' '}
-        <strong>£{owed}</strong>.
+        <strong>R${owed}</strong>.
       </p>
       <p>
-        {p.name} tem £{p.cash} em caixa.
+        {p.name} tem R${p.cash} em caixa.
       </p>
       {!canAfford && (
         <p style={{ color: 'var(--danger)' }}>

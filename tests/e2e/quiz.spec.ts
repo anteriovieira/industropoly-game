@@ -34,8 +34,8 @@ test('quiz: a loja de dicas é renderizada se a pergunta abrir', async ({ page }
   }
 
   // Hint shop section is labeled "Loja de Dicas". At least one hint button
-  // ("£X" suffix) should be present.
+  // ("R$X" suffix) should be present.
   await expect(page.getByText('Loja de Dicas')).toBeVisible();
-  const hintButtons = page.locator('button', { hasText: /£\d+/ });
+  const hintButtons = page.locator('button', { hasText: /R\$\d+/ });
   expect(await hintButtons.count()).toBeGreaterThan(0);
 });

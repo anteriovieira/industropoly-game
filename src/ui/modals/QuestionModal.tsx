@@ -172,7 +172,7 @@ export function QuestionModal() {
           Loja de Dicas
         </div>
         <div style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: 8 }}>
-          Cofre: £{p.cash}
+          Cofre: R${p.cash}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {question.hints.map((hint) => (
@@ -251,7 +251,7 @@ function HintButton({
     <button
       disabled={revealed || !canAfford}
       onClick={onBuy}
-      aria-label={`Comprar dica ${label} por £${hint.priceCash}`}
+      aria-label={`Comprar dica ${label} por R$${hint.priceCash}`}
       style={{
         padding: '6px 10px',
         fontSize: '0.85rem',
@@ -260,7 +260,7 @@ function HintButton({
       }}
       title={revealed ? 'Dica já revelada' : !canAfford ? 'Dinheiro insuficiente' : undefined}
     >
-      {label} · £{hint.priceCash}
+      {label} · R${hint.priceCash}
     </button>
   );
 }

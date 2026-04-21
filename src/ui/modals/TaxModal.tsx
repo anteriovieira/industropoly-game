@@ -12,7 +12,7 @@ export function TaxModal({ tileId, owed }: { tileId: number; owed: number }) {
     <Modal
       title={tile.name}
       onConfirm={() => dispatch({ type: 'ACK_MODAL' })}
-      confirmLabel={`Pagar £${owed}`}
+      confirmLabel={`Pagar R$${owed}`}
       dismissible={false}
     >
       <em>{tile.education.date}</em>
@@ -20,7 +20,7 @@ export function TaxModal({ tileId, owed }: { tileId: number; owed: number }) {
       <p style={{ margin: '0.5em 0' }}>{tile.education.blurb}</p>
       <small style={{ opacity: 0.75 }}>Fonte: {tile.education.source}</small>
       <p style={{ marginTop: 16 }}>
-        <strong>{p.name}</strong> deve pagar £{owed}.
+        <strong>{p.name}</strong> deve pagar R${owed}.
       </p>
     </Modal>
   );
