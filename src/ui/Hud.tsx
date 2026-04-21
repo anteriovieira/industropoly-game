@@ -470,9 +470,7 @@ function PlayerCard({
         </span>
         <span
           style={{
-            fontSize: '0.95rem',
             fontVariantNumeric: 'tabular-nums',
-            fontFamily: 'var(--font-display)',
           }}
         >
           R${player.cash}
