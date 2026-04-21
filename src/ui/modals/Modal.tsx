@@ -44,6 +44,10 @@ export function Modal({
         placeItems: 'center',
         zIndex: 50,
         padding: 16,
+        // Modal can be mounted inside containers that set pointer-events: none
+        // (e.g. the HUD overlay). Re-enable here so the backdrop and dialog
+        // always receive clicks regardless of where they're rendered.
+        pointerEvents: 'auto',
       }}
       onClick={(e) => {
         if (dismissible && e.target === e.currentTarget) onClose?.();
