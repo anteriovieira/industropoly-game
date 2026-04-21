@@ -14,6 +14,7 @@ import { QuestionModal } from '@/ui/modals/QuestionModal';
 import { StoryModal } from '@/ui/modals/StoryModal';
 import { FactsJournal } from '@/ui/modals/FactsJournal';
 import { AcquisitionsModal } from '@/ui/modals/AcquisitionsModal';
+import { HistoryModal } from '@/ui/modals/HistoryModal';
 import { CameraHint } from '@/ui/CameraHint';
 import { activePlayer } from '@/engine/selectors';
 import { save } from '@/lib/persist';
@@ -35,6 +36,8 @@ export function GameScreen() {
   const setStoryOpen = useUiStore((s) => s.setStoryOpen);
   const acquisitionsOpen = useUiStore((s) => s.acquisitionsOpen);
   const setAcquisitionsOpen = useUiStore((s) => s.setAcquisitionsOpen);
+  const historyOpen = useUiStore((s) => s.historyOpen);
+  const setHistoryOpen = useUiStore((s) => s.setHistoryOpen);
   useGameAudio();
 
   // Autosave on state change
@@ -116,6 +119,8 @@ export function GameScreen() {
         setStoryOpen(false);
       } else if (e.key === 'Escape' && acquisitionsOpen) {
         setAcquisitionsOpen(false);
+      } else if (e.key === 'Escape' && historyOpen) {
+        setHistoryOpen(false);
       } else if (e.key.toLowerCase() === 'h') {
         setStoryOpen(!storyOpen);
       } else if (e.key.toLowerCase() === 'a') {
@@ -135,6 +140,8 @@ export function GameScreen() {
     setStoryOpen,
     acquisitionsOpen,
     setAcquisitionsOpen,
+    historyOpen,
+    setHistoryOpen,
   ]);
 
   if (!state) return null;
@@ -162,6 +169,7 @@ export function GameScreen() {
       {journalOpen && <FactsJournal />}
       {storyOpen && <StoryModal />}
       {acquisitionsOpen && <AcquisitionsModal />}
+      {historyOpen && <HistoryModal />}
     </div>
   );
 }

@@ -67,6 +67,7 @@ export function Hud() {
   const setStoryOpen = useUiStore((s) => s.setStoryOpen);
   const setAcquisitionsOpen = useUiStore((s) => s.setAcquisitionsOpen);
   const openAcquisitionsForPlayer = useUiStore((s) => s.openAcquisitionsForPlayer);
+  const setHistoryOpen = useUiStore((s) => s.setHistoryOpen);
   const setPhase = useUiStore((s) => s.setPhase);
   const setNotice = useUiStore((s) => s.setNotice);
   const resetCamera = useUiStore((s) => s.resetCamera);
@@ -348,6 +349,7 @@ export function Hud() {
           onOpenJournal={() => setJournalOpen(true)}
           onOpenStory={() => setStoryOpen(true)}
           onOpenAcquisitions={() => setAcquisitionsOpen(true)}
+          onOpenHistory={() => setHistoryOpen(true)}
           onResetCamera={() => resetCamera()}
           onToggleShake={() => {
             void toggleShake();

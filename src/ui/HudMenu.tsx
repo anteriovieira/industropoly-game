@@ -9,6 +9,7 @@ interface HudMenuProps {
   onOpenJournal: () => void;
   onOpenStory: () => void;
   onOpenAcquisitions: () => void;
+  onOpenHistory: () => void;
   onResetCamera: () => void;
   onToggleShake: () => void;
   onRequestQuit: () => void;
@@ -20,6 +21,7 @@ export function HudMenu({
   onOpenJournal,
   onOpenStory,
   onOpenAcquisitions,
+  onOpenHistory,
   onResetCamera,
   onToggleShake,
   onRequestQuit,
@@ -105,6 +107,16 @@ export function HudMenu({
               }
             >
               🏭 Aquisições <Shortcut>A</Shortcut>
+            </MenuItem>
+            <MenuItem
+              onClick={() =>
+                runAndClose(() => {
+                  audio.play('click');
+                  onOpenHistory();
+                })
+              }
+            >
+              📜 Histórico
             </MenuItem>
             <MenuItem
               onClick={() =>
