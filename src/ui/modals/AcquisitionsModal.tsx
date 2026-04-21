@@ -221,48 +221,95 @@ function SectionTitle({ children }: { children: string }) {
 
 function SectorGroup({ state, group }: { state: GameState; group: PlayerSectorGroup }) {
   const palette = sectorPalette[group.sector];
+  const sectorRent = group.tiles.reduce(
+    (sum, h) => sum + computeRent(state, h.tileId, UTILITY_RENT_ESTIMATE_ROLL),
+    0,
+  );
+  const pct = group.sectorTotal > 0 ? group.tiles.length / group.sectorTotal : 0;
+  // Highest-tier tiles first within a sector — they're the strategic anchors.
+  const sorted = [...group.tiles].sort((a, b) => b.tier - a.tier || a.tileId - b.tileId);
+
   return (
-    <article style={{ marginBottom: 14 }}>
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          marginBottom: 6,
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{
-            display: 'inline-block',
-            width: 12,
-            height: 12,
-            borderRadius: 12,
-            background: palette.base,
-            border: '1px solid #3b2b18',
-          }}
-        />
-        <strong>{palette.label}</strong>
-        <span style={{ fontSize: '0.8rem', opacity: 0.75 }}>
-          {group.tiles.length}/{group.sectorTotal} tiles
-        </span>
-        {group.monopoly && (
+    <article style={{ marginBottom: 16 }}>
+      <header style={{ marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span
-            data-testid={`acq-monopoly-${group.sector}`}
+            aria-hidden="true"
             style={{
-              fontSize: '0.75rem',
-              padding: '2px 6px',
-              borderRadius: 4,
-              background: 'rgba(31,92,62,0.18)',
-              color: '#1f5c3e',
+              display: 'inline-block',
+              width: 14,
+              height: 14,
+              borderRadius: 14,
+              background: palette.base,
+              border: '1px solid #3b2b18',
+            }}
+          />
+          <strong style={{ flex: 1 }}>{palette.label}</strong>
+          {group.monopoly && (
+            <span
+              data-testid={`acq-monopoly-${group.sector}`}
+              style={{
+                fontSize: '0.72rem',
+                padding: '2px 6px',
+                borderRadius: 4,
+                background: 'rgba(31,92,62,0.18)',
+                color: '#1f5c3e',
+              }}
+            >
+              ★ Monopólio
+            </span>
+          )}
+          <span
+            style={{
+              fontSize: '0.78rem',
+              opacity: 0.75,
+              fontVariantNumeric: 'tabular-nums',
             }}
           >
-            Monopólio
+            £{sectorRent}/turno
           </span>
-        )}
+        </div>
+        <div
+          style={{
+            marginTop: 4,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <span
+            style={{
+              position: 'relative',
+              flex: 1,
+              height: 4,
+              background: 'rgba(59,43,24,0.18)',
+              borderRadius: 2,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: `${pct * 100}%`,
+                background: palette.base,
+                borderRadius: 2,
+              }}
+            />
+          </span>
+          <span
+            style={{
+              fontSize: '0.72rem',
+              opacity: 0.75,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {group.tiles.length}/{group.sectorTotal} tiles
+          </span>
+        </div>
       </header>
       <div style={{ display: 'grid', gap: 6 }}>
-        {group.tiles.map((h) => (
+        {sorted.map((h) => (
           <IndustryRow key={h.tileId} state={state} tier={h.tier} mortgaged={h.mortgaged} tileId={h.tileId} />
         ))}
       </div>

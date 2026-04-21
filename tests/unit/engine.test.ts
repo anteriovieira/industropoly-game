@@ -200,7 +200,7 @@ function wrongOptionFor(state: GameState): string {
 }
 
 describe('engine quiz flow', () => {
-  it('ROLL_DICE on a quiz-eligible parked tile enters awaiting-quiz-answer about that tile', () => {
+  it('ROLL_DICE on a quiz-eligible parked tile enters awaiting-quiz-answer about that tile, deferring the roll', () => {
     let s = mkState();
     s = enterQuizAt(s, 1); // Cromford — industry, has a question
     expect(s.turnPhase).toBe('awaiting-quiz-answer');
@@ -208,7 +208,8 @@ describe('engine quiz flow', () => {
     expect(s.currentQuiz!.tileId).toBe(1);
     // Position is unchanged — the quiz happens BEFORE movement.
     expect(s.players[s.activePlayerIndex]!.position).toBe(1);
-    expect(s.lastRoll).not.toBeNull();
+    // Dice are NOT rolled until the player answers correctly.
+    expect(s.lastRoll).toBeNull();
   });
 
   it('ROLL_DICE on a corner skips the quiz and goes straight to moving', () => {
@@ -220,13 +221,16 @@ describe('engine quiz flow', () => {
     expect(s.lastRoll).not.toBeNull();
   });
 
-  it('correct answer on the pre-move quiz transitions to moving (RESOLVE_MOVEMENT then advances the token)', () => {
+  it('correct answer on the pre-move quiz rolls the dice and transitions to moving (then RESOLVE_MOVEMENT advances the token)', () => {
     let s = mkState();
     s = enterQuizAt(s, 1);
-    const total = s.lastRoll!.total;
+    expect(s.lastRoll).toBeNull();
     s = reducer(s, { type: 'ANSWER_QUESTION', optionId: correctOptionFor(s) });
     expect(s.currentQuiz).toBeNull();
     expect(s.turnPhase).toBe('moving');
+    // Dice are rolled now.
+    expect(s.lastRoll).not.toBeNull();
+    const total = s.lastRoll!.total;
     expect(s.players[s.activePlayerIndex]!.quizStats.correct).toBe(1);
     s = reducer(s, { type: 'RESOLVE_MOVEMENT' });
     // Was parked at tile 1; advanced by `total`.

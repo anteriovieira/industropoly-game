@@ -14,7 +14,7 @@ const TOKENS: ReadonlyArray<{ id: TokenKind; label: string }> = [
   { id: 'factory-chimney', label: 'Chaminé Fabril' },
 ];
 
-const PLAYER_COLORS = ['#8a2a1b', '#1f3e52', '#5a2a68', '#6b8e4e'];
+const PLAYER_COLORS = ['#e5624a', '#5aa0c8', '#b174c7', '#a8cf68'];
 
 interface Draft {
   name: string;

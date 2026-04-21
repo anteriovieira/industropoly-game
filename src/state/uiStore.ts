@@ -20,6 +20,8 @@ interface UiStore {
   setNotice: (notice: string | null) => void;
   cameraResetNonce: number;
   resetCamera: () => void;
+  diceDragging: boolean;
+  setDiceDragging: (dragging: boolean) => void;
 }
 
 export const useUiStore = create<UiStore>((set) => ({
@@ -39,4 +41,6 @@ export const useUiStore = create<UiStore>((set) => ({
   setNotice: (notice) => set({ notice }),
   cameraResetNonce: 0,
   resetCamera: () => set((s) => ({ cameraResetNonce: s.cameraResetNonce + 1 })),
+  diceDragging: false,
+  setDiceDragging: (diceDragging) => set({ diceDragging }),
 }));

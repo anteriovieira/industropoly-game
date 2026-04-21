@@ -19,6 +19,7 @@ export function BoardScene() {
   const { pixelRatio, shadowMapType } = useMemo(() => qualityPreset(quality), [quality]);
   const controls = useRef<MapControlsImpl | null>(null);
   const resetKey = useUiStore((s) => s.cameraResetNonce);
+  const diceDragging = useUiStore((s) => s.diceDragging);
 
   // Clamp the pan target on every change so the board never strays too far off-screen.
   useEffect(() => {
@@ -107,6 +108,7 @@ export function BoardScene() {
           On touch: one finger pans, two fingers pinch-zoom and rotate. */}
       <MapControls
         ref={controls}
+        enabled={!diceDragging}
         enableDamping
         dampingFactor={0.12}
         screenSpacePanning={false}

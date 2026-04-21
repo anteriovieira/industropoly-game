@@ -4,11 +4,11 @@ import { useUiStore } from '@/state/uiStore';
 import { Parchment } from './Parchment';
 import { MuteButton } from './MuteButton';
 import { Modal } from './modals/Modal';
-import { activePlayer } from '@/engine/selectors';
+import { activePlayer, playerHoldings } from '@/engine/selectors';
 import { audio } from '@/lib/audio';
 import { clear as clearSave } from '@/lib/persist';
-import type { TurnPhase } from '@/engine/types';
-import { PLAYER_COLORS } from './theme';
+import type { GameState, Player, PlayerId, TurnPhase } from '@/engine/types';
+import { PLAYER_COLORS, sectorPalette } from './theme';
 
 const PHASE_LABELS: Record<TurnPhase, string> = {
   'awaiting-roll': 'aguardando lançamento',
@@ -31,6 +31,17 @@ export function Hud() {
   const setPhase = useUiStore((s) => s.setPhase);
   const resetCamera = useUiStore((s) => s.resetCamera);
   const [confirmingQuit, setConfirmingQuit] = useState(false);
+  const [expandedCards, setExpandedCards] = useState<Set<PlayerId>>(new Set());
+
+  function toggleCard(id: PlayerId): void {
+    setExpandedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    audio.play('click');
+  }
 
   function quitGame(): void {
     clearSave();
@@ -62,47 +73,19 @@ export function Hud() {
         }}
       >
         {state.players.map((p, i) => (
-          <Parchment
+          <PlayerCard
             key={p.id}
-            padding="10px 14px"
-            style={{
-              minWidth: 150,
-              opacity: p.bankrupt ? 0.45 : 1,
-              border:
-                p.id === active.id
-                  ? `2px solid ${PLAYER_COLORS[i]}`
-                  : '1px solid rgba(59,43,24,0.4)',
+            player={p}
+            color={PLAYER_COLORS[i] ?? PLAYER_COLORS[0]!}
+            isActive={p.id === active.id}
+            expanded={expandedCards.has(p.id)}
+            onToggle={() => toggleCard(p.id)}
+            onOpenDetails={() => {
+              audio.play('click');
+              setAcquisitionsOpen(true);
             }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.1rem',
-              }}
-            >
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: 10,
-                  height: 10,
-                  borderRadius: 10,
-                  background: PLAYER_COLORS[i],
-                }}
-              />
-              {p.name}
-            </div>
-            <div style={{ fontSize: '0.9rem' }}>£{p.cash}</div>
-            <div style={{ fontSize: '0.75rem', opacity: 0.75 }} title="Acertos / erros / dicas">
-              ✓ {p.quizStats.correct} · ✗ {p.quizStats.wrong}
-              {p.quizStats.hintsBought > 0 ? ` · 💡${p.quizStats.hintsBought}` : ''}
-            </div>
-            {p.inPrison && (
-              <div style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>Preso</div>
-            )}
-          </Parchment>
+            state={state}
+          />
         ))}
       </div>
 
@@ -259,6 +242,7 @@ export function Hud() {
         <MuteButton />
       </div>
 
+      {/* spacer */}
       {active.inPrison && phase === 'awaiting-roll' && (
         <div
           style={{
@@ -277,6 +261,242 @@ export function Hud() {
           </Parchment>
         </div>
       )}
+    </div>
+  );
+}
+
+interface PlayerCardProps {
+  player: Player;
+  color: string;
+  isActive: boolean;
+  expanded: boolean;
+  onToggle: () => void;
+  onOpenDetails: () => void;
+  state: GameState;
+}
+
+function PlayerCard({
+  player,
+  color,
+  isActive,
+  expanded,
+  onToggle,
+  onOpenDetails,
+  state,
+}: PlayerCardProps) {
+  const holdings = expanded ? playerHoldings(state, player.id) : null;
+
+  return (
+    <Parchment
+      padding="10px 14px"
+      style={{
+        minWidth: expanded ? 220 : 160,
+        maxWidth: expanded ? 260 : undefined,
+        opacity: player.bankrupt ? 0.45 : 1,
+        border: isActive ? `2px solid ${color}` : '1px solid rgba(59,43,24,0.4)',
+        transition: 'min-width 120ms ease',
+      }}
+    >
+      <button
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-label={`${expanded ? 'Recolher' : 'Expandir'} ficha de ${player.name}`}
+        style={{
+          all: 'unset',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          fontFamily: 'var(--font-display)',
+          fontSize: '1.1rem',
+          width: '100%',
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'inline-block',
+            width: 10,
+            height: 10,
+            borderRadius: 10,
+            background: color,
+          }}
+        />
+        {player.name}
+        <span
+          aria-hidden="true"
+          style={{
+            marginLeft: 'auto',
+            fontSize: '0.85rem',
+            opacity: 0.6,
+            transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 120ms ease',
+          }}
+        >
+          ▸
+        </span>
+      </button>
+
+      <div style={{ fontSize: '0.9rem' }}>£{player.cash}</div>
+      <div
+        style={{ fontSize: '0.75rem', opacity: 0.75 }}
+        title="Acertos / erros / dicas"
+      >
+        ✓ {player.quizStats.correct} · ✗ {player.quizStats.wrong}
+        {player.quizStats.hintsBought > 0 ? ` · 💡${player.quizStats.hintsBought}` : ''}
+      </div>
+      {player.inPrison && (
+        <div style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>Preso</div>
+      )}
+
+      {expanded && holdings && (
+        <div
+          style={{
+            marginTop: 8,
+            paddingTop: 8,
+            borderTop: '1px solid rgba(59,43,24,0.25)',
+            fontSize: '0.78rem',
+          }}
+        >
+          {holdings.totals.tileCount === 0 ? (
+            <em style={{ opacity: 0.7 }}>Sem aquisições.</em>
+          ) : (
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: 6,
+                  opacity: 0.85,
+                }}
+              >
+                <span>{holdings.totals.tileCount} tiles</span>
+                <span>£{holdings.totals.rentIncome}/turno</span>
+              </div>
+              <div style={{ display: 'grid', gap: 4 }}>
+                {holdings.industriesBySector.map((g) => (
+                  <SectorChip
+                    key={g.sector}
+                    sector={g.sector}
+                    owned={g.tiles.length}
+                    total={g.sectorTotal}
+                    monopoly={g.monopoly}
+                  />
+                ))}
+                {holdings.transports.length > 0 && (
+                  <CategoryChip
+                    icon="🚂"
+                    label="Transportes"
+                    owned={holdings.transports.length}
+                    total={4}
+                  />
+                )}
+                {holdings.utilities.length > 0 && (
+                  <CategoryChip
+                    icon="⚡"
+                    label="Utilidades"
+                    owned={holdings.utilities.length}
+                    total={2}
+                  />
+                )}
+              </div>
+            </>
+          )}
+          <button
+            onClick={onOpenDetails}
+            style={{
+              marginTop: 8,
+              all: 'unset',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              color: color,
+              borderBottom: `1px dashed ${color}`,
+            }}
+          >
+            Ver detalhes (A)
+          </button>
+        </div>
+      )}
+    </Parchment>
+  );
+}
+
+function SectorChip({
+  sector,
+  owned,
+  total,
+  monopoly,
+}: {
+  sector: keyof typeof sectorPalette;
+  owned: number;
+  total: number;
+  monopoly: boolean;
+}) {
+  const palette = sectorPalette[sector];
+  const pct = total > 0 ? owned / total : 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span
+        aria-hidden="true"
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 8,
+          background: palette.base,
+          flexShrink: 0,
+        }}
+      />
+      <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {palette.label}
+      </span>
+      <span style={{ position: 'relative', width: 38, height: 4, background: 'rgba(59,43,24,0.18)', borderRadius: 2 }}>
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: `${pct * 100}%`,
+            background: palette.base,
+            borderRadius: 2,
+          }}
+        />
+      </span>
+      <span style={{ minWidth: 28, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+        {owned}/{total}
+      </span>
+      {monopoly && (
+        <span
+          aria-label="Monopólio"
+          title="Monopólio"
+          style={{ color: '#1f5c3e', fontSize: '0.85rem' }}
+        >
+          ★
+        </span>
+      )}
+    </div>
+  );
+}
+
+function CategoryChip({
+  icon,
+  label,
+  owned,
+  total,
+}: {
+  icon: string;
+  label: string;
+  owned: number;
+  total: number;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span aria-hidden="true" style={{ width: 12, textAlign: 'center' }}>
+        {icon}
+      </span>
+      <span style={{ flex: 1 }}>{label}</span>
+      <span style={{ minWidth: 28, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+        {owned}/{total}
+      </span>
     </div>
   );
 }

@@ -1,67 +1,339 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useEffect, useMemo, useRef } from 'react';
+import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/state/gameStore';
+import { useUiStore } from '@/state/uiStore';
+import { activePlayer } from '@/engine/selectors';
 
-// Tumble-and-settle 3D dice. The engine is authoritative for the result;
-// the animation just plays for a fixed duration and then snaps faces to match.
+// Physics-driven 3D dice with click-to-drag and double-click-to-roll.
+// The engine is authoritative for the result; the visual sim integrates real
+// gravity + bouncing for the first ~780 ms, then slerps the orientation to the
+// target face over ~220 ms. Total budget is 1000 ms so the GameScreen movement
+// scheduler stays in sync.
 
-const ANIM_MS = 1000;
+const ANIM_BUDGET_MS = 1000;
+const SETTLE_MS = 220;
+const PHYSICS_BUDGET_MS = ANIM_BUDGET_MS - SETTLE_MS;
+
+const FALL_HEIGHT = 4.2; // drop start height above the rest plane
+const REST_Y = 0.55; // sits a hair above the board surface
+const DIE_SIZE = 0.7;
+const PAIR_DX = 0.55;
+const DRAG_BOUND = 8.5;
+
+const DRAG_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), -REST_Y);
+
+// Physics constants — units/s² for gravity. Scaled higher than 9.81 for snappy
+// game feel; the dice should look like they fall on dense marble, not on cotton.
+const GRAVITY = -52;
+// Coefficient of restitution: each bounce keeps √(RESTITUTION) of the inbound
+// velocity. 0.36 → ~3 visible bounces on this drop height before settling.
+const RESTITUTION = 0.36;
+// Tangential energy lost on impact (lateral velocity * GROUND_FRICTION after
+// a bounce; spin damped by ANGULAR_BOUNCE_DAMPING).
+const GROUND_FRICTION = 0.6;
+const ANGULAR_BOUNCE_DAMPING = 0.55;
+// Continuous air drag, expressed as a half-life in seconds. Lighter for
+// linear motion (dice don't drift much), heavier for angular (spin bleeds off).
+const AIR_LINEAR_HALF_LIFE = 0.7;
+const AIR_ANGULAR_HALF_LIFE = 0.45;
+// Bounce-back velocity below this is treated as "at rest" → triggers settle.
+const STOP_VY = 1.0;
+const STOP_ANG = 1.5; // rad/s
+
+interface DiePhysics {
+  startTime: number;
+  pos: THREE.Vector3;
+  vel: THREE.Vector3;
+  q: THREE.Quaternion;
+  // World-space angular velocity; magnitude is rad/s along the axis direction.
+  angVel: THREE.Vector3;
+  settled: boolean;
+  settleStart: number | null;
+  settleFromQ: THREE.Quaternion;
+  settleFromPos: THREE.Vector3;
+  targetQ: THREE.Quaternion;
+}
+
+interface DragState {
+  pointerId: number;
+  offset: THREE.Vector3;
+  moved: boolean;
+}
 
 export function Dice() {
-  const roll = useGameStore((s) => s.state?.lastRoll);
-  const group1 = useRef<THREE.Group>(null);
-  const group2 = useRef<THREE.Group>(null);
-  const startedAt = useRef<number | null>(null);
-  const [, force] = useState(0);
+  const lastRoll = useGameStore((s) => s.state?.lastRoll ?? null);
+  const turnPhase = useGameStore((s) => s.state?.turnPhase ?? null);
+  const dispatch = useGameStore((s) => s.dispatch);
+  const inPrison = useGameStore((s) => {
+    const st = s.state;
+    return st ? activePlayer(st).inPrison : false;
+  });
 
+  const canRoll = turnPhase === 'awaiting-roll' && !inPrison;
+
+  function tryRoll(): void {
+    if (canRoll) dispatch({ type: 'ROLL_DICE' });
+  }
+
+  return (
+    <>
+      <DraggableDie
+        defaultPos={[-PAIR_DX, REST_Y, 0]}
+        face={lastRoll?.a ?? 1}
+        rollNonce={lastRoll}
+        onDoubleClick={tryRoll}
+      />
+      <DraggableDie
+        defaultPos={[PAIR_DX, REST_Y, 0]}
+        face={lastRoll?.b ?? 1}
+        rollNonce={lastRoll}
+        onDoubleClick={tryRoll}
+      />
+    </>
+  );
+}
+
+interface DraggableDieProps {
+  defaultPos: [number, number, number];
+  face: number;
+  rollNonce: object | null;
+  onDoubleClick: () => void;
+}
+
+function DraggableDie({ defaultPos, face, rollNonce, onDoubleClick }: DraggableDieProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  const physicsRef = useRef<DiePhysics | null>(null);
+  const dragRef = useRef<DragState | null>(null);
+  const restPosRef = useRef<THREE.Vector3>(new THREE.Vector3(...defaultPos));
+  const restQRef = useRef<THREE.Quaternion>(faceQuaternion(face));
+
+  // Initial mount: snap the group transform to the default rest pose.
   useEffect(() => {
-    if (!roll) {
-      startedAt.current = null;
+    const g = groupRef.current;
+    if (!g) return;
+    g.position.copy(restPosRef.current);
+    g.quaternion.copy(restQRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // New roll → start a new physics sim. Position re-anchors at current rest
+  // (the user may have dragged the die mid-game; the next fall lands there).
+  useEffect(() => {
+    if (!rollNonce) return;
+    physicsRef.current = startPhysics(restPosRef.current, face);
+    if (dragRef.current) {
+      dragRef.current = null;
+      useUiStore.getState().setDiceDragging(false);
+    }
+  }, [rollNonce, face]);
+
+  useFrame((_, delta) => {
+    const g = groupRef.current;
+    if (!g) return;
+    if (dragRef.current) return;
+    const phys = physicsRef.current;
+    if (!phys) return;
+
+    // Clamp dt so a stalled tab (huge delta on resume) doesn't tunnel the
+    // die through the floor.
+    const dt = Math.min(delta, 0.04);
+
+    if (!phys.settled) {
+      stepPhysics(phys, dt, restPosRef.current.y);
+      const elapsed = performance.now() - phys.startTime;
+      // Force settle if we've eaten the entire physics budget — we MUST leave
+      // SETTLE_MS for the closing slerp so total animation is bounded.
+      if (!phys.settled && elapsed >= PHYSICS_BUDGET_MS) {
+        beginSettle(phys);
+      }
+      g.position.copy(phys.pos);
+      g.quaternion.copy(phys.q);
       return;
     }
-    startedAt.current = performance.now();
-    force((n) => n + 1);
-  }, [roll]);
 
-  useFrame(() => {
-    if (startedAt.current == null) return;
-    const elapsed = performance.now() - startedAt.current;
-    const t = Math.min(1, elapsed / ANIM_MS);
-    const tumble = (1 - t) * 10;
-    if (group1.current) {
-      group1.current.rotation.x += tumble * 0.02;
-      group1.current.rotation.y += tumble * 0.025;
-    }
-    if (group2.current) {
-      group2.current.rotation.x += tumble * 0.022;
-      group2.current.rotation.z += tumble * 0.018;
-    }
-    if (t >= 1 && roll && group1.current && group2.current) {
-      faceRotation(group1.current, roll.a);
-      faceRotation(group2.current, roll.b);
-      startedAt.current = null;
+    // Settle: slide the position back to the chosen rest spot and slerp the
+    // orientation onto the closest yaw-variant of the target face quaternion.
+    const elapsed = performance.now() - (phys.settleStart ?? performance.now());
+    const t = Math.min(1, elapsed / SETTLE_MS);
+    const e = easeOutCubic(t);
+    g.position.lerpVectors(phys.settleFromPos, restPosRef.current, e);
+    g.quaternion.slerpQuaternions(phys.settleFromQ, phys.targetQ, e);
+    if (t >= 1) {
+      g.position.copy(restPosRef.current);
+      g.quaternion.copy(phys.targetQ);
+      restQRef.current.copy(phys.targetQ);
+      physicsRef.current = null;
     }
   });
 
-  if (!roll) return null;
+  // ---- Pointer handlers ----
+
+  function handlePointerDown(e: ThreeEvent<PointerEvent>): void {
+    if (physicsRef.current) return;
+    e.stopPropagation();
+    const target = e.target as Element & { setPointerCapture?: (id: number) => void };
+    target.setPointerCapture?.(e.pointerId);
+
+    const hit = new THREE.Vector3();
+    if (!e.ray.intersectPlane(DRAG_PLANE, hit)) return;
+    const offset = restPosRef.current.clone().sub(hit);
+    dragRef.current = { pointerId: e.pointerId, offset, moved: false };
+    useUiStore.getState().setDiceDragging(true);
+  }
+
+  function handlePointerMove(e: ThreeEvent<PointerEvent>): void {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const hit = new THREE.Vector3();
+    if (!e.ray.intersectPlane(DRAG_PLANE, hit)) return;
+    const next = hit.add(drag.offset);
+    next.x = clamp(next.x, -DRAG_BOUND, DRAG_BOUND);
+    next.z = clamp(next.z, -DRAG_BOUND, DRAG_BOUND);
+    restPosRef.current.set(next.x, REST_Y, next.z);
+    drag.moved = true;
+    const g = groupRef.current;
+    if (g) g.position.copy(restPosRef.current);
+  }
+
+  function handlePointerUp(e: ThreeEvent<PointerEvent>): void {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const target = e.target as Element & { releasePointerCapture?: (id: number) => void };
+    target.releasePointerCapture?.(e.pointerId);
+    dragRef.current = null;
+    useUiStore.getState().setDiceDragging(false);
+  }
+
+  function handleDoubleClick(e: ThreeEvent<MouseEvent>): void {
+    if (dragRef.current?.moved) return;
+    if (physicsRef.current) return;
+    e.stopPropagation();
+    onDoubleClick();
+  }
+
   return (
-    <group position={[0, 0.6, 0]}>
-      <group ref={group1} position={[-0.6, 0, 0]}>
-        <Die />
-      </group>
-      <group ref={group2} position={[0.6, 0, 0]}>
-        <Die />
-      </group>
+    <group
+      ref={groupRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onDoubleClick={handleDoubleClick}
+    >
+      <DieMesh />
     </group>
   );
 }
 
-function Die() {
+// ---- Physics simulation ----
+
+function startPhysics(restPos: THREE.Vector3, face: number): DiePhysics {
+  const startQ = randomTumbleQuaternion();
+  // Initial drop with a slight horizontal drift so the cube doesn't fall along
+  // a perfectly straight vertical line — that always reads as "fake".
+  const driftMag = 0.45;
+  // Angular velocity randomised in 8..16 rad/s on each axis with random sign.
+  const spin = (): number => (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * 8);
+  return {
+    startTime: performance.now(),
+    pos: new THREE.Vector3(restPos.x, restPos.y + FALL_HEIGHT, restPos.z),
+    vel: new THREE.Vector3(
+      (Math.random() * 2 - 1) * driftMag,
+      0,
+      (Math.random() * 2 - 1) * driftMag,
+    ),
+    q: startQ.clone(),
+    angVel: new THREE.Vector3(spin(), spin(), spin()),
+    settled: false,
+    settleStart: null,
+    settleFromQ: startQ.clone(),
+    settleFromPos: new THREE.Vector3(),
+    targetQ: faceQuaternion(face),
+  };
+}
+
+function stepPhysics(phys: DiePhysics, dt: number, floorY: number): void {
+  // 1. Linear motion: gravity → velocity → position.
+  phys.vel.y += GRAVITY * dt;
+  phys.pos.x += phys.vel.x * dt;
+  phys.pos.y += phys.vel.y * dt;
+  phys.pos.z += phys.vel.z * dt;
+
+  // 2. Continuous air drag (exponential decay using half-life).
+  const linDecay = Math.pow(0.5, dt / AIR_LINEAR_HALF_LIFE);
+  phys.vel.x *= linDecay;
+  phys.vel.z *= linDecay;
+  const angDecay = Math.pow(0.5, dt / AIR_ANGULAR_HALF_LIFE);
+  phys.angVel.multiplyScalar(angDecay);
+
+  // 3. Floor collision: invert vy with restitution, damp tangential + spin.
+  if (phys.pos.y <= floorY) {
+    phys.pos.y = floorY;
+    if (phys.vel.y < 0) {
+      phys.vel.y = -phys.vel.y * RESTITUTION;
+      phys.vel.x *= GROUND_FRICTION;
+      phys.vel.z *= GROUND_FRICTION;
+      phys.angVel.multiplyScalar(ANGULAR_BOUNCE_DAMPING);
+    }
+    // Rest condition: bounce too weak to be visible AND spin nearly gone.
+    if (phys.vel.y < STOP_VY && phys.angVel.length() < STOP_ANG) {
+      beginSettle(phys);
+      return;
+    }
+  }
+
+  // 4. Angular integration: rotate the orientation by angVel * dt around its
+  // axis. Pre-multiply so we apply the rotation in world space.
+  const len = phys.angVel.length();
+  if (len > 1e-6) {
+    const axis = phys.angVel.clone().divideScalar(len);
+    const dq = new THREE.Quaternion().setFromAxisAngle(axis, len * dt);
+    phys.q.premultiply(dq);
+    phys.q.normalize();
+  }
+}
+
+function beginSettle(phys: DiePhysics): void {
+  phys.settled = true;
+  phys.settleStart = performance.now();
+  phys.settleFromQ = phys.q.clone();
+  phys.settleFromPos = phys.pos.clone();
+  // Choose the yaw-rotated variant of the target face quaternion that's
+  // closest to the current orientation. This keeps the closing slerp short
+  // and removes the "sudden snap" feel.
+  phys.targetQ = closestYawVariant(phys.q, phys.targetQ);
+}
+
+// All four 90°-yaw rotations of `targetQ` show the same face up. Pick the one
+// nearest to `currentQ` (largest absolute dot product).
+const _yawTmp = new THREE.Quaternion();
+const _yawAxis = new THREE.Vector3(0, 1, 0);
+function closestYawVariant(
+  currentQ: THREE.Quaternion,
+  targetQ: THREE.Quaternion,
+): THREE.Quaternion {
+  let best = targetQ.clone();
+  let bestDot = -Infinity;
+  for (let i = 0; i < 4; i++) {
+    _yawTmp.setFromAxisAngle(_yawAxis, (i * Math.PI) / 2);
+    const variant = _yawTmp.clone().multiply(targetQ);
+    const d = Math.abs(variant.dot(currentQ));
+    if (d > bestDot) {
+      bestDot = d;
+      best = variant;
+    }
+  }
+  return best;
+}
+
+// ---- Mesh + materials ----
+
+function DieMesh() {
   const mats = useMemo(() => [1, 2, 3, 4, 5, 6].map((n) => diePipsMaterial(n)), []);
   return (
-    <mesh castShadow>
-      <boxGeometry args={[0.7, 0.7, 0.7]} />
+    <mesh castShadow receiveShadow>
+      <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
       {mats.map((m, i) => (
         <primitive key={i} object={m} attach={`material-${i}`} />
       ))}
@@ -125,17 +397,37 @@ const PIPS: Record<number, Array<[number, number]>> = {
   ],
 };
 
-// Face indexing of BoxGeometry: 0 +X, 1 -X, 2 +Y, 3 -Y, 4 +Z, 5 -Z.
-// We want a given face to be up (+Y) at rest.
-function faceRotation(g: THREE.Group, face: number): void {
-  const rotations: Record<number, [number, number, number]> = {
-    1: [0, 0, 0],
-    2: [0, 0, -Math.PI / 2],
-    3: [Math.PI / 2, 0, 0],
-    4: [-Math.PI / 2, 0, 0],
-    5: [0, 0, Math.PI / 2],
-    6: [Math.PI, 0, 0],
-  };
-  const r = rotations[face] ?? [0, 0, 0];
-  g.rotation.set(r[0], r[1], r[2]);
+// BoxGeometry material slots: 0=+X, 1=-X, 2=+Y, 3=-Y, 4=+Z, 5=-Z.
+// Materials assigned [pip 1..pip 6], so pip N is on face axis +X/-X/+Y/-Y/+Z/-Z.
+// To bring face N to world +Y, rotate the cube so that axis points up.
+const FACE_EULER: Record<number, [number, number, number]> = {
+  1: [0, 0, Math.PI / 2], // +X → +Y
+  2: [0, 0, -Math.PI / 2], // -X → +Y
+  3: [0, 0, 0], // +Y already up
+  4: [Math.PI, 0, 0], // -Y → +Y
+  5: [-Math.PI / 2, 0, 0], // +Z → +Y
+  6: [Math.PI / 2, 0, 0], // -Z → +Y
+};
+
+function faceQuaternion(face: number): THREE.Quaternion {
+  const e = FACE_EULER[face] ?? FACE_EULER[1]!;
+  return new THREE.Quaternion().setFromEuler(new THREE.Euler(e[0], e[1], e[2]));
+}
+
+function randomTumbleQuaternion(): THREE.Quaternion {
+  return new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(
+      Math.random() * Math.PI * 4,
+      Math.random() * Math.PI * 4,
+      Math.random() * Math.PI * 4,
+    ),
+  );
+}
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function clamp(v: number, min: number, max: number): number {
+  return v < min ? min : v > max ? max : v;
 }

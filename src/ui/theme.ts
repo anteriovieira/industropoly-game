@@ -37,7 +37,7 @@ export const sectorPalette: Record<SectorId, { base: string; label: string }> = 
 };
 
 // Per-player accent colors, indexed by player order (0..3).
-export const PLAYER_COLORS = ['#8a2a1b', '#1f3e52', '#5a2a68', '#6b8e4e'] as const;
+export const PLAYER_COLORS = ['#e5624a', '#5aa0c8', '#b174c7', '#a8cf68'] as const;
 
 export const typography = {
   display: `'IM Fell English', 'Book Antiqua', Georgia, serif`,

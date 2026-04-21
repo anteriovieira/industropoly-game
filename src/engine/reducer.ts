@@ -159,6 +159,25 @@ function handleRoll(state: GameState): GameState {
   const p = selActive(state);
   if (p.inPrison) return state;
 
+  // Quiz gates the ROLL itself: if the active player is parked on a tile with
+  // an authored question, surface the quiz first WITHOUT rolling. The dice
+  // only get rolled once they answer correctly. A wrong answer means no roll
+  // and no movement at all.
+  const currentTile = TILE_INDEX[p.position]!;
+  if (currentTile.role !== 'corner' && (QUESTIONS[currentTile.id]?.length ?? 0) > 0) {
+    return startQuizForCurrentTile(state, currentTile.id);
+  }
+
+  // No quiz on this tile — roll immediately and proceed to movement.
+  return performRoll(state);
+}
+
+// Actually rolls the dice, updates lastRoll/doublesStreak/log, and transitions
+// to `moving` (or `awaiting-end-turn` on a 3-doubles prison send-off). Called
+// from `handleRoll` for non-quiz tiles and from `handleAnswerQuestion` after a
+// correct answer.
+function performRoll(state: GameState): GameState {
+  const p = selActive(state);
   const r = rollPair(state.rngState);
   const doublesStreak = r.doubles ? p.doublesStreak + 1 : 0;
   let s: GameState = {
@@ -170,21 +189,10 @@ function handleRoll(state: GameState): GameState {
   s = updateActivePlayer(s, (pl) => ({ ...pl, doublesStreak }));
   s = appendLog(s, `${p.name} tirou ${r.a} + ${r.b}${r.doubles ? ' (dupla!)' : ''}.`);
 
-  // Three consecutive doubles -> prison, do not resolve movement
   if (r.doubles && doublesStreak >= 3) {
     s = sendActiveToPrison(s, 'excesso de velocidade suspeito');
     return { ...s, lastRoll: null, turnPhase: 'awaiting-end-turn' };
   }
-
-  // Quiz now gates MOVEMENT, not landing. If the active player is parked on a
-  // tile with an authored question, enter the quiz before the token moves.
-  // Corners (no questions) and tiles with no authored question fall through
-  // to `moving` so the existing animation pipeline runs unchanged.
-  const currentTile = TILE_INDEX[selActive(s).position]!;
-  if (currentTile.role !== 'corner' && (QUESTIONS[currentTile.id]?.length ?? 0) > 0) {
-    return startQuizForCurrentTile(s, currentTile.id);
-  }
-
   return s;
 }
 
@@ -430,9 +438,10 @@ function handleAnswerQuestion(state: GameState, optionId: string): GameState {
   );
 
   if (correct) {
-    // Quiz passed — release the token to move. GameScreen auto-dispatches
-    // RESOLVE_MOVEMENT once turnPhase enters `moving`.
-    return { ...s, currentQuiz: null, turnPhase: 'moving' };
+    // Quiz passed — NOW roll the dice. The 3-doubles prison check runs inside
+    // performRoll. GameScreen auto-dispatches RESOLVE_MOVEMENT once turnPhase
+    // enters `moving`. The dice 'fall' animation triggers off lastRoll change.
+    return performRoll({ ...s, currentQuiz: null });
   }
 
   // Wrong answer: token stays parked. Clear lastRoll so no movement animation
