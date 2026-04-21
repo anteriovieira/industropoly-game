@@ -14,6 +14,8 @@ interface UiStore {
   setJournalOpen: (open: boolean) => void;
   storyOpen: boolean;
   setStoryOpen: (open: boolean) => void;
+  acquisitionsOpen: boolean;
+  setAcquisitionsOpen: (open: boolean) => void;
   notice: string | null;
   setNotice: (notice: string | null) => void;
   cameraResetNonce: number;
@@ -31,6 +33,8 @@ export const useUiStore = create<UiStore>((set) => ({
   setJournalOpen: (journalOpen) => set({ journalOpen }),
   storyOpen: false,
   setStoryOpen: (storyOpen) => set({ storyOpen }),
+  acquisitionsOpen: false,
+  setAcquisitionsOpen: (acquisitionsOpen) => set({ acquisitionsOpen }),
   notice: null,
   setNotice: (notice) => set({ notice }),
   cameraResetNonce: 0,

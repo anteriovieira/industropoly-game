@@ -36,6 +36,9 @@ export const sectorPalette: Record<SectorId, { base: string; label: string }> = 
   empire: { base: '#5a2a68', label: 'Empire Finance' },
 };
 
+// Per-player accent colors, indexed by player order (0..3).
+export const PLAYER_COLORS = ['#8a2a1b', '#1f3e52', '#5a2a68', '#6b8e4e'] as const;
+
 export const typography = {
   display: `'IM Fell English', 'Book Antiqua', Georgia, serif`,
   body: `'Inter', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif`,

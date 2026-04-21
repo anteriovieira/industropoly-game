@@ -43,16 +43,42 @@ export function BoardScene() {
     c.update();
   }, [resetKey]);
 
+  // On touch devices (tablets, phones) Safari/Chrome can refuse the WebGL
+  // context with `high-performance` powerPreference, leaving the canvas blank.
+  // Detect coarse-pointer devices and degrade gracefully: drop the powerPref,
+  // cap dpr lower, disable shadows entirely.
+  const isCoarsePointer = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(pointer: coarse)').matches === true,
+    [],
+  );
+  const effectivePixelRatio: [number, number] = isCoarsePointer ? [1, 1] : pixelRatio;
+  const shadowsEnabled = !isCoarsePointer;
+
   return (
     <Canvas
-      shadows
-      dpr={pixelRatio}
+      shadows={shadowsEnabled}
+      dpr={effectivePixelRatio}
       camera={{ position: DEFAULT_CAMERA_POS, fov: 36, near: 0.1, far: 200 }}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
+      // On iOS Safari/Chrome, `highp` shader probing can fail. The webgl shim
+      // installed at boot returns safe defaults if `getShaderPrecisionFormat`
+      // is null; on touch devices we additionally request `mediump` so the
+      // probe is skipped entirely.
+      gl={{ antialias: true, precision: isCoarsePointer ? 'mediump' : 'highp' }}
       onCreated={({ gl }) => {
-        gl.shadowMap.type = shadowMapType;
+        if (shadowsEnabled) gl.shadowMap.type = shadowMapType;
         gl.outputColorSpace = THREE.SRGBColorSpace;
+        // If the WebGL context is lost (memory pressure on tablets), surface
+        // it in the console so we can diagnose instead of staring at a black box.
+        const canvas = gl.domElement;
+        canvas.addEventListener('webglcontextlost', (e) => {
+          // eslint-disable-next-line no-console
+          console.error('WebGL context lost', e);
+          e.preventDefault();
+        });
       }}
+      style={{ touchAction: 'none' }}
       aria-hidden="true"
     >
       <color attach="background" args={['#1a120a']} />
@@ -63,7 +89,7 @@ export function BoardScene() {
       <directionalLight
         position={[10, 18, 8]}
         intensity={1.2}
-        castShadow={quality !== 'low'}
+        castShadow={shadowsEnabled && quality !== 'low'}
         shadow-mapSize={quality === 'high' ? 2048 : 1024}
         shadow-camera-left={-18}
         shadow-camera-right={18}
@@ -109,3 +135,5 @@ function qualityPreset(q: 'low' | 'medium' | 'high'): {
   if (q === 'high') return { pixelRatio: [1, 2], shadowMapType: THREE.PCFSoftShadowMap };
   return { pixelRatio: [1, 1.5], shadowMapType: THREE.PCFShadowMap };
 }
+
+

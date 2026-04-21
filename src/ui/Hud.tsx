@@ -8,8 +8,7 @@ import { activePlayer } from '@/engine/selectors';
 import { audio } from '@/lib/audio';
 import { clear as clearSave } from '@/lib/persist';
 import type { TurnPhase } from '@/engine/types';
-
-const PLAYER_COLORS = ['#8a2a1b', '#1f3e52', '#5a2a68', '#6b8e4e'];
+import { PLAYER_COLORS } from './theme';
 
 const PHASE_LABELS: Record<TurnPhase, string> = {
   'awaiting-roll': 'aguardando lançamento',
@@ -28,6 +27,7 @@ export function Hud() {
   const clearStore = useGameStore((s) => s.clear);
   const setJournalOpen = useUiStore((s) => s.setJournalOpen);
   const setStoryOpen = useUiStore((s) => s.setStoryOpen);
+  const setAcquisitionsOpen = useUiStore((s) => s.setAcquisitionsOpen);
   const setPhase = useUiStore((s) => s.setPhase);
   const resetCamera = useUiStore((s) => s.resetCamera);
   const [confirmingQuit, setConfirmingQuit] = useState(false);
@@ -227,6 +227,16 @@ export function Hud() {
           title="Ler edição atual do jornal (H)"
         >
           📰 Jornal (H)
+        </button>
+        <button
+          onClick={() => {
+            audio.play('click');
+            setAcquisitionsOpen(true);
+          }}
+          aria-label="Ver aquisições (A)"
+          title="Ver aquisições (A)"
+        >
+          Aquisições (A)
         </button>
         <button
           onClick={() => {

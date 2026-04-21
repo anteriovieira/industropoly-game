@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BoardScene } from '@/scene/BoardScene';
+import { SceneErrorBoundary } from './SceneErrorBoundary';
 import { Hud } from '@/ui/Hud';
 import { useGameStore } from '@/state/gameStore';
 import { useUiStore } from '@/state/uiStore';
@@ -11,6 +12,7 @@ import { PrisonModal } from '@/ui/modals/PrisonModal';
 import { QuestionModal } from '@/ui/modals/QuestionModal';
 import { StoryModal } from '@/ui/modals/StoryModal';
 import { FactsJournal } from '@/ui/modals/FactsJournal';
+import { AcquisitionsModal } from '@/ui/modals/AcquisitionsModal';
 import { CameraHint } from '@/ui/CameraHint';
 import { activePlayer } from '@/engine/selectors';
 import { save } from '@/lib/persist';
@@ -30,6 +32,8 @@ export function GameScreen() {
   const setJournalOpen = useUiStore((s) => s.setJournalOpen);
   const storyOpen = useUiStore((s) => s.storyOpen);
   const setStoryOpen = useUiStore((s) => s.setStoryOpen);
+  const acquisitionsOpen = useUiStore((s) => s.acquisitionsOpen);
+  const setAcquisitionsOpen = useUiStore((s) => s.setAcquisitionsOpen);
   useGameAudio();
 
   // Autosave on state change
@@ -87,13 +91,28 @@ export function GameScreen() {
         setJournalOpen(false);
       } else if (e.key === 'Escape' && storyOpen) {
         setStoryOpen(false);
+      } else if (e.key === 'Escape' && acquisitionsOpen) {
+        setAcquisitionsOpen(false);
       } else if (e.key.toLowerCase() === 'h') {
         setStoryOpen(!storyOpen);
+      } else if (e.key.toLowerCase() === 'a') {
+        const blocked =
+          state.modal !== null || journalOpen || storyOpen || acquisitionsOpen;
+        if (!blocked) setAcquisitionsOpen(true);
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [state, dispatch, journalOpen, setJournalOpen, storyOpen, setStoryOpen]);
+  }, [
+    state,
+    dispatch,
+    journalOpen,
+    setJournalOpen,
+    storyOpen,
+    setStoryOpen,
+    acquisitionsOpen,
+    setAcquisitionsOpen,
+  ]);
 
   if (!state) return null;
   const m = state.modal;
@@ -101,9 +120,11 @@ export function GameScreen() {
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
-      <div style={{ position: 'absolute', inset: 0 }}>
-        <BoardScene />
-      </div>
+      <SceneErrorBoundary>
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <BoardScene />
+        </div>
+      </SceneErrorBoundary>
       <Hud />
       <CameraHint />
       {state.turnPhase === 'awaiting-quiz-answer' && state.currentQuiz && <QuestionModal />}
@@ -116,6 +137,7 @@ export function GameScreen() {
       {inPrisonActive && <PrisonModal />}
       {journalOpen && <FactsJournal />}
       {storyOpen && <StoryModal />}
+      {acquisitionsOpen && <AcquisitionsModal />}
     </div>
   );
 }
