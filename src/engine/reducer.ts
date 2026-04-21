@@ -665,25 +665,32 @@ function handleApplyCard(state: GameState): GameState {
 function applyCardEffect(state: GameState, effect: CardEffect, card: Card): GameState {
   const p = selActive(state);
   switch (effect.kind) {
-    case 'gain':
-      return updateActivePlayer(state, (pl) => ({ ...pl, cash: pl.cash + effect.amount }));
+    case 'gain': {
+      let s = updateActivePlayer(state, (pl) => ({ ...pl, cash: pl.cash + effect.amount }));
+      return appendLog(s, `${p.name} recebeu R$${effect.amount} (${card.title}).`);
+    }
     case 'pay': {
       if (p.cash + netWorthExcludingCash(state, p.id) < effect.amount) {
         let s = appendLog(state, `${p.name} não pode pagar R$${effect.amount} — falido.`);
         s = markBankrupt(s, p.id);
         return checkWin(s);
       }
-      return updateActivePlayer(state, (pl) => ({ ...pl, cash: pl.cash - effect.amount }));
+      let s = updateActivePlayer(state, (pl) => ({ ...pl, cash: pl.cash - effect.amount }));
+      return appendLog(s, `${p.name} pagou R$${effect.amount} (${card.title}).`);
     }
     case 'move-to': {
       const target = effect.tileId;
       let cashDelta = 0;
       if (effect.passStartAward && target < p.position) cashDelta += PASS_START_BONUS;
-      return updateActivePlayer(state, (pl) => ({
+      let s = updateActivePlayer(state, (pl) => ({
         ...pl,
         position: target,
         cash: pl.cash + cashDelta,
       }));
+      const destName = TILE_INDEX[target]?.name ?? `casa ${target}`;
+      s = appendLog(s, `${p.name} foi levado(a) para ${destName}.`);
+      if (cashDelta > 0) s = appendLog(s, `${p.name} passou pelo Início e recebeu R$${cashDelta}.`);
+      return s;
     }
     case 'move-by': {
       let pos = p.position;
@@ -694,16 +701,23 @@ function applyCardEffect(state: GameState, effect: CardEffect, card: Card): Game
         pos = (pos + dir + BOARD_SIZE) % BOARD_SIZE;
         if (dir > 0 && pos === 0) cashDelta += PASS_START_BONUS;
       }
-      return updateActivePlayer(state, (pl) => ({
+      let s = updateActivePlayer(state, (pl) => ({
         ...pl,
         position: pos,
         cash: pl.cash + cashDelta,
       }));
+      const destName = TILE_INDEX[pos]?.name ?? `casa ${pos}`;
+      const verb = effect.delta >= 0 ? 'avançou' : 'recuou';
+      s = appendLog(s, `${p.name} ${verb} ${steps} casa(s) até ${destName}.`);
+      if (cashDelta > 0) s = appendLog(s, `${p.name} passou pelo Início e recebeu R$${cashDelta}.`);
+      return s;
     }
     case 'go-to-prison':
       return sendActiveToPrison(state, `por ${card.title}`);
-    case 'keep-get-out-of-prison':
-      return updateActivePlayer(state, (pl) => ({ ...pl, getOutCards: pl.getOutCards + 1 }));
+    case 'keep-get-out-of-prison': {
+      let s = updateActivePlayer(state, (pl) => ({ ...pl, getOutCards: pl.getOutCards + 1 }));
+      return appendLog(s, `${p.name} guardou uma carta de Perdão Real.`);
+    }
     case 'pay-per-property': {
       let industries = 0;
       let upgrades = 0;
@@ -740,6 +754,7 @@ function applyCardEffect(state: GameState, effect: CardEffect, card: Card): Game
         }
       }
       s = updateActivePlayer(s, (pl) => ({ ...pl, cash: pl.cash + total }));
+      if (total > 0) s = appendLog(s, `${p.name} recebeu R$${total} dos demais jogadores (${card.title}).`);
       return checkWin(s);
     }
   }

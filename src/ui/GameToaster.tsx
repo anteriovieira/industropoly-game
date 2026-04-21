@@ -26,13 +26,18 @@ export function GameToaster() {
   return (
     <Toaster
       position="top-right"
-      duration={4000}
+      duration={30000}
+      visibleToasts={9}
+      expand
+      closeButton
+      gap={8}
       icons={{ success: null, info: null, warning: null, error: null, loading: null }}
       toastOptions={{
         unstyled: true,
         classNames: {
           toast: 'industropoly-toast',
           title: 'industropoly-toast-title',
+          closeButton: 'industropoly-toast-close',
         },
       }}
     />

@@ -25,7 +25,7 @@ test('quiz: a loja de dicas é renderizada se a pergunta abrir', async ({ page }
   await page.getByRole('button', { name: 'Começar' }).click();
   await page.getByRole('button', { name: 'Iniciar Jogo' }).click();
 
-  await page.getByRole('button', { name: /Lançar/ }).click();
+  await page.getByRole('button', { name: /Jogar/ }).click();
 
   const responder = page.getByRole('button', { name: 'Responder' });
   await responder.waitFor({ timeout: 8000 }).catch(() => undefined);

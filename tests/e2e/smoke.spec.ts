@@ -16,8 +16,8 @@ test('intro -> setup -> jogo, lança dados, responde pergunta e encerra turno', 
   await page.getByRole('button', { name: 'Iniciar Jogo' }).click();
 
   // Roll
-  await expect(page.getByRole('button', { name: /Lançar/ })).toBeVisible();
-  await page.getByRole('button', { name: /Lançar/ }).click();
+  await expect(page.getByRole('button', { name: /Jogar/ })).toBeVisible();
+  await page.getByRole('button', { name: /Jogar/ }).click();
 
   // Quiz: pick first option, submit, then continue past the result panel.
   // Note: corner landings (rare) skip the quiz; we tolerate either.
@@ -51,7 +51,7 @@ test('intro -> setup -> jogo, lança dados, responde pergunta e encerra turno', 
   if (await recusar.isVisible().catch(() => false)) await recusar.click();
   else if (await continuar.isVisible().catch(() => false)) await continuar.click();
 
-  // End turn via the combined Lançar button — in awaiting-end-turn it ends
+  // End turn via the combined Jogar button — in awaiting-end-turn it ends
   // the current turn and auto-rolls for the next player.
   await endTurnSentinel.waitFor({ timeout: 4000 });
   await page.getByRole('button', { name: /Lançar →/ }).click();
