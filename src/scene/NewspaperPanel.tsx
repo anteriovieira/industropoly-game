@@ -4,8 +4,8 @@ import { useGameStore } from '@/state/gameStore';
 import { getStoryById } from '@/content/stories';
 
 const MASTHEAD = 'O Cronista Industrial';
-const LEAD_SNIPPET_CHARS = 140;
-const SECONDARY_SNIPPET_CHARS = 70;
+const LEAD_SNIPPET_CHARS = 240;
+const SECONDARY_SNIPPET_CHARS = 380;
 
 // Newspaper-style panel at the geometric center of the board. 6 headlines per
 // issue laid out as a framed front page: masthead with rule, edition line,
@@ -19,29 +19,33 @@ export function NewspaperPanel({ innerSize }: { innerSize: number }) {
   const secondary = stories.slice(1, 6); // up to 5
 
   // Page geometry (board-local). The board's parchment plane is `innerSize`
-  // wide; we inset slightly so the frame sits a touch inboard.
+  // wide; we inset slightly so the frame sits a touch inboard. Page is taller
+  // than before to accommodate denser snippets in each item.
   const y = BOARD.tileDepth / 2 + 0.025;
   const pageW = innerSize - 4;
-  const pageH = 7.0; // tall enough for masthead + lead + 2 rows of secondary
-  const pageHalfW = pageW / 2;
+  const pageH = 11.0;
   const pageHalfH = pageH / 2;
 
   // Vertical layout, in panel-local coords (origin at center of page).
-  const yMasthead = pageHalfH - 0.55;
-  const yMastheadRule = pageHalfH - 0.95;
-  const yEdition = pageHalfH - 1.25;
-  const yLeadDivider = pageHalfH - 1.55;
-  const yLeadTitle = pageHalfH - 2.05;
-  const yLeadSnippet = pageHalfH - 2.55;
-  const ySecondaryDivider = pageHalfH - 3.15;
+  // Title→snippet gaps trimmed to ~0.4 so the body sits right below the title.
+  const yMasthead = pageHalfH - 0.65;
+  const yMastheadRule = pageHalfH - 1.15;
+  const yEdition = pageHalfH - 1.55;
+  const yLeadDivider = pageHalfH - 2.05;
+  const yLeadTitle = pageHalfH - 2.6;
+  const yLeadSnippet = pageHalfH - 3.0;
+  const ySecondaryDivider = pageHalfH - 4.85;
 
   // Secondary grid: 3 columns, up to 2 rows. Items 0-2 in row 0, items 3-4 in row 1.
   const colW = pageW / 3;
-  const colXs = [-colW, 0, colW]; // column centers
-  const ySecondaryRow0Title = pageHalfH - 3.55;
-  const ySecondaryRow0Snippet = pageHalfH - 3.95;
-  const ySecondaryRow1Title = pageHalfH - 4.95;
-  const ySecondaryRow1Snippet = pageHalfH - 5.35;
+  // Column LEFT edges (we left-align the inner text).
+  const colLefts = [-pageW / 2, -pageW / 6, pageW / 6].map((x) => x + 0.2);
+  // Inner column width with a small right gutter.
+  const colInnerW = colW - 0.4;
+  const ySecondaryRow0Title = pageHalfH - 5.3;
+  const ySecondaryRow0Snippet = pageHalfH - 5.7;
+  const ySecondaryRow1Title = pageHalfH - 8.6;
+  const ySecondaryRow1Snippet = pageHalfH - 9.0;
 
   return (
     <group position={[0, y, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -65,7 +69,7 @@ export function NewspaperPanel({ innerSize }: { innerSize: number }) {
       {/* Masthead rule (horizontal) */}
       <mesh position={[0, yMastheadRule, 0]}>
         <planeGeometry args={[pageW - 0.6, 0.03]} />
-        <meshBasicMaterial color={colors.ink} transparent opacity={0.7} />
+        <meshBasicMaterial color={colors.ink} transparent opacity={0.4} />
       </mesh>
       {/* Edition line */}
       <Text
@@ -85,10 +89,10 @@ export function NewspaperPanel({ innerSize }: { innerSize: number }) {
       {/* Divider above the lead */}
       <mesh position={[0, yLeadDivider, 0]}>
         <planeGeometry args={[pageW - 0.6, 0.02]} />
-        <meshBasicMaterial color={colors.ink} transparent opacity={0.55} />
+        <meshBasicMaterial color={colors.ink} transparent opacity={0.3} />
       </mesh>
 
-      {/* Lead headline (full-width) */}
+      {/* Lead headline (full-width). Title is centered for emphasis; body left-aligned for readability. */}
       {lead && (
         <>
           <Text
@@ -105,14 +109,14 @@ export function NewspaperPanel({ innerSize }: { innerSize: number }) {
             {lead.title}
           </Text>
           <Text
-            position={[0, yLeadSnippet, 0]}
+            position={[-pageW / 2 + 0.4, yLeadSnippet, 0]}
             fontSize={0.22}
             color={colors.inkSoft}
-            anchorX="center"
-            anchorY="middle"
-            textAlign="center"
+            anchorX="left"
+            anchorY="top"
+            textAlign="left"
             maxWidth={pageW - 0.8}
-            lineHeight={1.3}
+            lineHeight={1.35}
             raycast={() => null}
           >
             {trim(lead.body, LEAD_SNIPPET_CHARS)}
@@ -123,7 +127,7 @@ export function NewspaperPanel({ innerSize }: { innerSize: number }) {
       {/* Divider above the secondary grid */}
       <mesh position={[0, ySecondaryDivider, 0]}>
         <planeGeometry args={[pageW - 0.6, 0.02]} />
-        <meshBasicMaterial color={colors.ink} transparent opacity={0.55} />
+        <meshBasicMaterial color={colors.ink} transparent opacity={0.3} />
       </mesh>
 
       {/* Vertical column rules in the secondary grid */}
@@ -132,8 +136,8 @@ export function NewspaperPanel({ innerSize }: { innerSize: number }) {
           key={i}
           position={[x, (ySecondaryRow0Title + ySecondaryRow1Snippet) / 2, 0]}
         >
-          <planeGeometry args={[0.02, ySecondaryDivider - ySecondaryRow1Snippet - 0.2]} />
-          <meshBasicMaterial color={colors.ink} transparent opacity={0.4} />
+          <planeGeometry args={[0.02, ySecondaryDivider - ySecondaryRow1Snippet - 0.4]} />
+          <meshBasicMaterial color={colors.ink} transparent opacity={0.25} />
         </mesh>
       ))}
 
@@ -144,10 +148,10 @@ export function NewspaperPanel({ innerSize }: { innerSize: number }) {
         return (
           <SecondaryItem
             key={`r0-${i}`}
-            x={colXs[i]!}
+            xLeft={colLefts[i]!}
             yTitle={ySecondaryRow0Title}
             ySnippet={ySecondaryRow0Snippet}
-            colWidth={colW - 0.4}
+            colWidth={colInnerW}
             title={story.title}
             snippet={trim(story.body, SECONDARY_SNIPPET_CHARS)}
           />
@@ -161,10 +165,10 @@ export function NewspaperPanel({ innerSize }: { innerSize: number }) {
         return (
           <SecondaryItem
             key={`r1-${col}`}
-            x={colXs[col]!}
+            xLeft={colLefts[col]!}
             yTitle={ySecondaryRow1Title}
             ySnippet={ySecondaryRow1Snippet}
-            colWidth={colW - 0.4}
+            colWidth={colInnerW}
             title={story.title}
             snippet={trim(story.body, SECONDARY_SNIPPET_CHARS)}
           />
@@ -175,14 +179,14 @@ export function NewspaperPanel({ innerSize }: { innerSize: number }) {
 }
 
 function SecondaryItem({
-  x,
+  xLeft,
   yTitle,
   ySnippet,
   colWidth,
   title,
   snippet,
 }: {
-  x: number;
+  xLeft: number;
   yTitle: number;
   ySnippet: number;
   colWidth: number;
@@ -192,10 +196,10 @@ function SecondaryItem({
   return (
     <>
       <Text
-        position={[x, yTitle, 0]}
+        position={[xLeft, yTitle, 0]}
         fontSize={0.22}
         color={colors.ink}
-        anchorX="center"
+        anchorX="left"
         anchorY="middle"
         maxWidth={colWidth}
         raycast={() => null}
@@ -203,14 +207,14 @@ function SecondaryItem({
         {title}
       </Text>
       <Text
-        position={[x, ySnippet, 0]}
+        position={[xLeft, ySnippet, 0]}
         fontSize={0.16}
         color={colors.inkSoft}
-        anchorX="center"
-        anchorY="middle"
-        textAlign="center"
+        anchorX="left"
+        anchorY="top"
+        textAlign="left"
         maxWidth={colWidth}
-        lineHeight={1.25}
+        lineHeight={1.3}
         raycast={() => null}
       >
         {snippet}
@@ -223,7 +227,7 @@ function Frame({ width, height }: { width: number; height: number }) {
   const t = 0.04; // border thickness
   const halfW = width / 2;
   const halfH = height / 2;
-  const opacity = 0.6;
+  const opacity = 0.35;
   return (
     <group>
       {/* top */}

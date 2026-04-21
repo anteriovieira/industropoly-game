@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useGameStore } from '@/state/gameStore';
 import { useUiStore } from '@/state/uiStore';
 import { Parchment } from './Parchment';
 import { MuteButton } from './MuteButton';
+import { Modal } from './modals/Modal';
 import { activePlayer } from '@/engine/selectors';
 import { audio } from '@/lib/audio';
+import { clear as clearSave } from '@/lib/persist';
 import type { TurnPhase } from '@/engine/types';
 
 const PLAYER_COLORS = ['#8a2a1b', '#1f3e52', '#5a2a68', '#6b8e4e'];
@@ -22,9 +25,18 @@ const PHASE_LABELS: Record<TurnPhase, string> = {
 export function Hud() {
   const state = useGameStore((s) => s.state)!;
   const dispatch = useGameStore((s) => s.dispatch);
+  const clearStore = useGameStore((s) => s.clear);
   const setJournalOpen = useUiStore((s) => s.setJournalOpen);
   const setStoryOpen = useUiStore((s) => s.setStoryOpen);
+  const setPhase = useUiStore((s) => s.setPhase);
   const resetCamera = useUiStore((s) => s.resetCamera);
+  const [confirmingQuit, setConfirmingQuit] = useState(false);
+
+  function quitGame(): void {
+    clearSave();
+    clearStore();
+    setPhase('intro');
+  }
 
   const active = activePlayer(state);
   const phase = state.turnPhase;
@@ -42,7 +54,7 @@ export function Hud() {
           position: 'absolute',
           top: 16,
           left: 16,
-          right: 16,
+          right: 180, // room for the quit button at top-right
           display: 'flex',
           gap: 12,
           pointerEvents: 'auto',
@@ -93,6 +105,63 @@ export function Hud() {
           </Parchment>
         ))}
       </div>
+
+      {/* Quit-game button — top-right corner. */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          pointerEvents: 'auto',
+        }}
+      >
+        <button
+          onClick={() => {
+            audio.play('click');
+            setConfirmingQuit(true);
+          }}
+          aria-label="Encerrar jogo"
+          title="Encerrar jogo"
+          style={{
+            padding: '6px 10px',
+            fontSize: '0.85rem',
+            background: 'rgba(138, 42, 27, 0.85)',
+            color: '#f3e7c1',
+            border: '1px solid #3b2b18',
+            borderRadius: 6,
+            cursor: 'pointer',
+          }}
+        >
+          ✕ Encerrar jogo
+        </button>
+      </div>
+
+      {confirmingQuit && (
+        <Modal
+          title="Encerrar o jogo?"
+          onClose={() => setConfirmingQuit(false)}
+          footer={
+            <>
+              <button className="ghost" onClick={() => setConfirmingQuit(false)}>
+                Continuar jogando
+              </button>
+              <button
+                className="primary"
+                onClick={() => {
+                  setConfirmingQuit(false);
+                  quitGame();
+                }}
+              >
+                Encerrar
+              </button>
+            </>
+          }
+        >
+          <p style={{ margin: 0 }}>
+            O progresso atual será perdido e você voltará à tela inicial. Deseja continuar?
+          </p>
+        </Modal>
+      )}
 
       <div
         style={{
