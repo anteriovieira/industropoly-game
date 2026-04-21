@@ -33,6 +33,17 @@ const STRING_PARAMETER_DEFAULTS: Record<number, string> = {
   0x1f01: 'shim',
 };
 
+// Three.js WebGLState init does `new Vector4().fromArray(gl.getParameter(gl.SCISSOR_BOX))`
+// and `...VIEWPORT`. iOS Safari/Chrome on degraded contexts (common on tablets) can
+// return null here, crashing with "null is not an object (evaluating 'e[t]')" before
+// the scene ever renders. Fall back to a zero Int32Array so fromArray succeeds.
+//   SCISSOR_BOX = 0x0C10 (3088)
+//   VIEWPORT    = 0x0BA2 (2978)
+const ARRAY_PARAMETER_FALLBACKS: Record<number, () => Int32Array> = {
+  0x0c10: () => new Int32Array([0, 0, 0, 0]),
+  0x0ba2: () => new Int32Array([0, 0, 0, 0]),
+};
+
 interface PatchableProto {
   getShaderPrecisionFormat?: (
     shaderType: number,
@@ -61,8 +72,11 @@ function patchProto(proto: PatchableProto | undefined): void {
   if (typeof originalGp === 'function') {
     proto.getParameter = function (this: WebGLRenderingContext, pname: number): unknown {
       const result = originalGp.call(this, pname);
-      if (result == null && pname in STRING_PARAMETER_DEFAULTS) {
-        return STRING_PARAMETER_DEFAULTS[pname];
+      if (result == null) {
+        const stringDefault = STRING_PARAMETER_DEFAULTS[pname];
+        if (stringDefault !== undefined) return stringDefault;
+        const arrayFallback = ARRAY_PARAMETER_FALLBACKS[pname];
+        if (arrayFallback !== undefined) return arrayFallback();
       }
       return result;
     };

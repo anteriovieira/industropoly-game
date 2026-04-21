@@ -6,8 +6,9 @@ import { Tokens } from './tokens/Tokens';
 import { Dice } from './Dice';
 import { useUiStore } from '@/state/uiStore';
 import { anchorForTile } from './layout';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MapControls as MapControlsImpl } from 'three-stdlib';
+import { reportToLogBridge } from '@/lib/logBridge';
 
 const DEFAULT_CAMERA_POS: [number, number, number] = [0, 22, 22];
 // Clamp the pan target so the board stays roughly visible — the board is 20 units wide
@@ -77,27 +78,63 @@ export function BoardScene() {
   );
   const effectivePixelRatio: [number, number] = isCoarsePointer ? [1, 1] : pixelRatio;
   const shadowsEnabled = !isCoarsePointer;
+  const [contextLost, setContextLost] = useState(false);
+
+  if (contextLost) return <ContextLostNotice />;
 
   return (
     <Canvas
       shadows={shadowsEnabled}
       dpr={effectivePixelRatio}
       camera={{ position: DEFAULT_CAMERA_POS, fov: 36, near: 0.1, far: 200 }}
-      // On iOS Safari/Chrome, `highp` shader probing can fail. The webgl shim
-      // installed at boot returns safe defaults if `getShaderPrecisionFormat`
-      // is null; on touch devices we additionally request `mediump` so the
-      // probe is skipped entirely.
-      gl={{ antialias: true, precision: isCoarsePointer ? 'mediump' : 'highp' }}
-      onCreated={({ gl }) => {
+      // iPad Chrome (CriOS) frequently creates a WebGL context that is
+      // already lost — `antialias: true` + the default `high-performance`
+      // power preference make this more likely. On coarse-pointer devices we
+      // ask for the cheapest possible context so iOS is more willing to
+      // grant it; on desktop we keep quality high.
+      gl={{
+        antialias: !isCoarsePointer,
+        precision: 'highp',
+        powerPreference: isCoarsePointer ? 'low-power' : 'high-performance',
+        failIfMajorPerformanceCaveat: false,
+        preserveDrawingBuffer: false,
+        alpha: false,
+        stencil: false,
+        depth: true,
+      }}
+      onCreated={({ gl, size, camera }) => {
         if (shadowsEnabled) gl.shadowMap.type = shadowMapType;
         gl.outputColorSpace = THREE.SRGBColorSpace;
-        // If the WebGL context is lost (memory pressure on tablets), surface
-        // it in the console so we can diagnose instead of staring at a black box.
+        const rawGl = gl.getContext() as WebGLRenderingContext | WebGL2RenderingContext;
         const canvas = gl.domElement;
+        const lostAtBoot =
+          typeof rawGl.isContextLost === 'function' ? rawGl.isContextLost() : false;
+        reportToLogBridge(lostAtBoot ? 'error' : 'info', 'canvas-created', {
+          kind: 'canvas-created',
+          coarsePointer: isCoarsePointer,
+          size: { w: size.width, h: size.height, top: size.top, left: size.left },
+          canvasCss: { w: canvas.clientWidth, h: canvas.clientHeight },
+          canvasBuffer: { w: canvas.width, h: canvas.height },
+          dpr: effectivePixelRatio,
+          shadowsEnabled,
+          camera: { type: camera.type, position: camera.position.toArray() },
+          glVersion: rawGl.getParameter(rawGl.VERSION) as string,
+          glVendor: rawGl.getParameter(rawGl.VENDOR) as string,
+          glRenderer: rawGl.getParameter(rawGl.RENDERER) as string,
+          glError: rawGl.getError(),
+          contextLost: lostAtBoot,
+        });
+        if (lostAtBoot) setContextLost(true);
         canvas.addEventListener('webglcontextlost', (e) => {
           // eslint-disable-next-line no-console
           console.error('WebGL context lost', e);
+          reportToLogBridge('error', 'webgl-context-lost', { kind: 'webgl-context-lost' });
           e.preventDefault();
+          setContextLost(true);
+        });
+        canvas.addEventListener('webglcontextrestored', () => {
+          reportToLogBridge('info', 'webgl-context-restored', { kind: 'webgl-context-restored' });
+          setContextLost(false);
         });
       }}
       style={{ touchAction: 'none' }}
@@ -143,6 +180,50 @@ export function BoardScene() {
         maxPolarAngle={Math.PI / 2 - 0.1}
       />
     </Canvas>
+  );
+}
+
+function ContextLostNotice() {
+  return (
+    <div
+      role="alert"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: '#1a120a',
+        color: '#f3e7c1',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        textAlign: 'center',
+        fontFamily: 'system-ui, sans-serif',
+      }}
+    >
+      <h2 style={{ color: '#f3a04a', marginBottom: 12 }}>
+        Não foi possível carregar a cena 3D
+      </h2>
+      <p style={{ maxWidth: 520, lineHeight: 1.5, opacity: 0.9 }}>
+        O navegador negou o contexto WebGL. No iPad isso costuma ser por causa de
+        memória: feche as outras abas do navegador e toque em <b>Recarregar</b>.
+      </p>
+      <button
+        onClick={() => window.location.reload()}
+        style={{
+          marginTop: 20,
+          padding: '10px 18px',
+          background: '#a0410d',
+          color: '#fff',
+          border: '1px solid #3b2b18',
+          borderRadius: 6,
+          fontSize: 16,
+          cursor: 'pointer',
+        }}
+      >
+        Recarregar
+      </button>
+    </div>
   );
 }
 

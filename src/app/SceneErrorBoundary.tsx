@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportToLogBridge } from '@/lib/logBridge';
 
 interface State {
   error: Error | null;
@@ -22,6 +23,12 @@ export class SceneErrorBoundary extends Component<{ children: ReactNode }, State
     this.setState({ info });
     // eslint-disable-next-line no-console
     console.error('Scene crashed:', error, info);
+    reportToLogBridge(
+      'error',
+      `Scene crashed: ${error.name}: ${error.message}`,
+      { kind: 'SceneErrorBoundary', componentStack: info.componentStack },
+      error.stack,
+    );
   }
 
   override render(): ReactNode {

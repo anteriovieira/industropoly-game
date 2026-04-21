@@ -1,0 +1,18 @@
+{
+  "name": "frontend-log-bridge",
+  "version": "0.1.0",
+  "description": "Recebe logs de erro do frontend via HTTP e expõe para o agente consumir em tempo real através de uma tool MCP. Sem escrita em arquivo.",
+  "author": {
+    "name": "Antério Vieira",
+    "email": "anteriovieira@gmail.com"
+  },
+  "mcpServers": {
+    "frontend-log-bridge": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server.mjs"],
+      "env": {
+        "FRONTEND_LOG_BRIDGE_PORT": "5858"
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Text } from '@react-three/drei';
 import { BOARD, colors } from '@/ui/theme';
@@ -7,11 +7,25 @@ import { TILES } from '@/content/tiles';
 import { TileMesh } from './TileMesh';
 import { anchorForTile, boardStep } from './layout';
 import { NewspaperPanel } from './NewspaperPanel';
+import { reportToLogBridge } from '@/lib/logBridge';
 
 export function Board() {
   const parchment = useMemo(() => getParchmentTexture(1024), []);
   const step = boardStep();
   const innerSize = BOARD.size - step * 2;
+
+  useEffect(() => {
+    reportToLogBridge('info', 'board-mounted', {
+      kind: 'board-mounted',
+      tileCount: TILES.length,
+      innerSize,
+      parchment: {
+        image: !!parchment.image,
+        imgWidth: (parchment.image as HTMLCanvasElement | undefined)?.width ?? null,
+        imgHeight: (parchment.image as HTMLCanvasElement | undefined)?.height ?? null,
+      },
+    });
+  }, [innerSize, parchment]);
 
   return (
     <group>

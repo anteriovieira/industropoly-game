@@ -3,11 +3,18 @@ import { AppRoot } from './app/AppRoot';
 import { SceneErrorBoundary } from './app/SceneErrorBoundary';
 import { GlobalErrorOverlay } from './app/GlobalErrorOverlay';
 import { installWebglPrecisionShim } from './lib/webglShim';
+import { installLogBridge, reportToLogBridge } from './lib/logBridge';
 import { registerServiceWorker } from './pwa/registerServiceWorker';
 import { usePwaStore } from './pwa/pwaStore';
 import './ui/global.css';
 
+installLogBridge();
 installWebglPrecisionShim();
+reportToLogBridge('info', 'boot', {
+  kind: 'boot',
+  viewport: { w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio },
+  coarsePointer: window.matchMedia?.('(pointer: coarse)').matches ?? null,
+});
 
 // NOTE: StrictMode intentionally NOT used. React 18 StrictMode double-mounts
 // every component in dev, creating two WebGL contexts per <Canvas>. iOS

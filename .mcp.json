@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "frontend-log-bridge": {
+      "command": "node",
+      "args": [
+        ".claude/plugins/frontend-log-bridge/server.mjs"
+      ],
+      "env": {
+        "FRONTEND_LOG_BRIDGE_PORT": "5858",
+        "FRONTEND_LOG_BRIDGE_HOST": "0.0.0.0"
+      }
+    }
+  }
+}
