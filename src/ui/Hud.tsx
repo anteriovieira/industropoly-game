@@ -23,6 +23,7 @@ export function Hud() {
   const state = useGameStore((s) => s.state)!;
   const dispatch = useGameStore((s) => s.dispatch);
   const setJournalOpen = useUiStore((s) => s.setJournalOpen);
+  const setStoryOpen = useUiStore((s) => s.setStoryOpen);
   const resetCamera = useUiStore((s) => s.resetCamera);
 
   const active = activePlayer(state);
@@ -147,6 +148,16 @@ export function Hud() {
           }}
         >
           Diário (J)
+        </button>
+        <button
+          onClick={() => {
+            audio.play('click');
+            setStoryOpen(true);
+          }}
+          aria-label="Ler história atual (H)"
+          title="Ler história atual (H)"
+        >
+          📜 História (H)
         </button>
         <button
           onClick={() => {

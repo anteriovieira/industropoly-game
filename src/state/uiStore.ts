@@ -12,6 +12,8 @@ interface UiStore {
   setShadowQuality: (q: ShadowQuality) => void;
   journalOpen: boolean;
   setJournalOpen: (open: boolean) => void;
+  storyOpen: boolean;
+  setStoryOpen: (open: boolean) => void;
   notice: string | null;
   setNotice: (notice: string | null) => void;
   cameraResetNonce: number;
@@ -27,6 +29,8 @@ export const useUiStore = create<UiStore>((set) => ({
   setShadowQuality: (shadowQuality) => set({ shadowQuality }),
   journalOpen: false,
   setJournalOpen: (journalOpen) => set({ journalOpen }),
+  storyOpen: false,
+  setStoryOpen: (storyOpen) => set({ storyOpen }),
   notice: null,
   setNotice: (notice) => set({ notice }),
   cameraResetNonce: 0,

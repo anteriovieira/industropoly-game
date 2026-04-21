@@ -6,6 +6,7 @@ import { getParchmentTexture } from '@/assets/parchment';
 import { TILES } from '@/content/tiles';
 import { TileMesh } from './TileMesh';
 import { anchorForTile, boardStep } from './layout';
+import { StoryPanel } from './StoryPanel';
 
 export function Board() {
   const parchment = useMemo(() => getParchmentTexture(1024), []);
@@ -36,23 +37,23 @@ export function Board() {
       {/* Compass rose — drawn top-left of the inner area as in the reference image */}
       <CompassRose position={[-innerSize / 2 + 2, BOARD.tileDepth / 2 + 0.02, -innerSize / 2 + 2]} />
 
-      {/* Title plaque at the board center */}
+      {/* Title pushed to the top edge so the center belongs to the story panel. */}
       <Text
-        position={[0, BOARD.tileDepth / 2 + 0.03, 0]}
+        position={[0, BOARD.tileDepth / 2 + 0.03, -innerSize / 2 + 1.0]}
         rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={1.8}
+        fontSize={1.1}
         color={colors.ink}
         anchorX="center"
         anchorY="middle"
-        outlineWidth={0.02}
+        outlineWidth={0.015}
         outlineColor={colors.parchmentLight}
       >
         INDUSTROPOLY
       </Text>
       <Text
-        position={[0, BOARD.tileDepth / 2 + 0.03, 1.4]}
+        position={[0, BOARD.tileDepth / 2 + 0.03, -innerSize / 2 + 1.9]}
         rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.6}
+        fontSize={0.42}
         color={colors.inkSoft}
         anchorX="center"
         anchorY="middle"
@@ -60,6 +61,9 @@ export function Board() {
       >
         A Era do Vapor
       </Text>
+
+      {/* Ambient story panel — faded "handwritten letter" at the geometric center. */}
+      <StoryPanel innerSize={innerSize} />
 
       {/* Tiles */}
       {TILES.map((t) => {

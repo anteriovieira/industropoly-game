@@ -221,6 +221,13 @@ export interface GameState {
   // Live quiz shown during `awaiting-quiz-answer`. Null in any other phase.
   currentQuiz: CurrentQuiz | null;
 
+  // Ambient story panel rendered at the board center. Rotates on END_TURN.
+  // Null only on a cold-loaded save predating the board-center-story change.
+  currentStoryId: string | null;
+  // Tile id of the most recently resolved landing — used to exclude that tile
+  // from the next story rotation so the panel never doubles as a quiz hint.
+  lastResolvedTileId: TileId | null;
+
   factsJournal: JournalEntry[];
   winner: PlayerId | null;
   status: 'active' | 'game-over';

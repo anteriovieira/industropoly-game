@@ -54,6 +54,8 @@ Every tile and every card carries a short, sourced historical blurb. When a play
 
 After every answer the game shows a **"Você sabia?"** panel with the tile's full historical blurb and source — the teach moment lands with the answer in mind. The HUD's **Info (I)** button still opens the standalone tile-info modal for out-of-turn browsing (no quiz). A per-game **Facts Journal** records every question seen and whether it was answered correctly. The end-of-game recap shows per-player quiz stats (acertos / erros / dicas / £ gastas em dicas) alongside the journal. See `openspec/changes/add-tile-quiz-gameplay/specs/tile-quiz-gameplay/spec.md` for the behavioral contract.
 
+At the **center of the 3D board** a faded sepia "letter" rotates one story per turn, so non-active players have something to read while waiting. The story is drawn from the same tile/card blurb corpus (no separate authoring), excludes the tile tied to the current or most recent quiz so it never becomes a cheat sheet, and is also exposed via the HUD's **📜 História (H)** button, which opens a fully readable, screen-reader-friendly modal. See `openspec/changes/add-board-center-story/specs/board-center-story/spec.md`.
+
 ### Adding a question
 
 Question content lives in `src/content/questions.ts`, keyed by `tileId`. Every gameplay-rule tile (industry, transport, utility, tax, card-draw) needs at least one entry:

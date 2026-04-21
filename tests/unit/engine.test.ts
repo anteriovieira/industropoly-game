@@ -381,3 +381,108 @@ describe('engine quiz flow', () => {
     expect(res.notice).toMatch(/atualizado|incompat|novo/i);
   });
 });
+
+describe('engine board-center-story', () => {
+  it('createInitialState seeds currentStoryId and leaves lastResolvedTileId null', () => {
+    const a = mkState(42);
+    expect(a.currentStoryId).not.toBeNull();
+    expect(a.lastResolvedTileId).toBeNull();
+    const b = mkState(42);
+    expect(b.currentStoryId).toBe(a.currentStoryId);
+  });
+
+  it('RESOLVE_MOVEMENT records the landed tile id in lastResolvedTileId', () => {
+    let s = mkState();
+    s = enterQuizAt(s, 5); // Bridgewater — transport tile, gameplay rule
+    expect(s.lastResolvedTileId).toBe(5);
+  });
+
+  it('a successful END_TURN rotates currentStoryId and advances rngState', () => {
+    let s = mkState();
+    // Set up a benign awaiting-end-turn state
+    s = {
+      ...s,
+      turnPhase: 'awaiting-end-turn',
+      pendingLandingResolved: true,
+      lastResolvedTileId: null,
+    };
+    const beforeStory = s.currentStoryId;
+    const beforeRng = s.rngState;
+    const next = reducer(s, { type: 'END_TURN' });
+    expect(next.currentStoryId).not.toBeNull();
+    expect(next.currentStoryId).not.toBe(beforeStory);
+    expect(next.rngState).not.toBe(beforeRng);
+  });
+
+  it('END_TURN dispatched in awaiting-quiz-answer is a no-op (same reference)', () => {
+    let s = mkState();
+    s = enterQuizAt(s, 1);
+    const next = reducer(s, { type: 'END_TURN' });
+    expect(next).toBe(s);
+  });
+
+  it('rotation excludes both the just-resolved tile and the previous story', () => {
+    let s = mkState();
+    // Force a known state: previous story = `tile:1`, lastResolved = 1
+    s = {
+      ...s,
+      currentStoryId: 'tile:1',
+      lastResolvedTileId: 1,
+      turnPhase: 'awaiting-end-turn',
+      pendingLandingResolved: true,
+    };
+    const next = reducer(s, { type: 'END_TURN' });
+    expect(next.currentStoryId).not.toBe('tile:1');
+    // sourceRefId for the picked story must not be tile:1 either
+    // (tile:1 is the only id whose sourceRefId equals tile:1)
+    expect(next.currentStoryId).not.toMatch(/^tile:1$/);
+  });
+
+  it('replay determinism — same seed + END_TURN sequence yields the same story chain', () => {
+    function play(seed: number): (string | null)[] {
+      let s = mkState(seed);
+      const chain: (string | null)[] = [s.currentStoryId];
+      for (let i = 0; i < 5; i++) {
+        const ready: GameState = {
+          ...s,
+          turnPhase: 'awaiting-end-turn',
+          pendingLandingResolved: true,
+        };
+        s = reducer(ready, { type: 'END_TURN' });
+        chain.push(s.currentStoryId);
+      }
+      return chain;
+    }
+    expect(play(99)).toEqual(play(99));
+  });
+
+  it('parseSave hydrates currentStoryId and lastResolvedTileId on v2 saves predating this change', () => {
+    // A v2 save built before add-board-center-story had no story fields.
+    const legacy = JSON.stringify({
+      schemaVersion: 2,
+      seed: 1,
+      rngState: 1,
+      turn: 1,
+      activePlayerIndex: 0,
+      turnPhase: 'awaiting-roll',
+      players: [],
+      order: [],
+      tiles: {},
+      decks: { invention: { draw: [], discard: [] }, edict: { draw: [], discard: [] } },
+      lastRoll: null,
+      modal: null,
+      pendingCardId: null,
+      pendingLandingResolved: false,
+      currentQuiz: null,
+      factsJournal: [],
+      winner: null,
+      status: 'active',
+      log: [],
+    });
+    const res = parseSave(legacy);
+    expect(res.state).not.toBeNull();
+    expect(res.notice).toBeNull();
+    expect(res.state!.currentStoryId).toBeNull();
+    expect(res.state!.lastResolvedTileId).toBeNull();
+  });
+});

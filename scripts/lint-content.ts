@@ -5,6 +5,7 @@ import { TILES } from '../src/content/tiles';
 import { INVENTION_CARDS } from '../src/content/invention-cards';
 import { EDICT_CARDS } from '../src/content/edict-cards';
 import { QUESTIONS } from '../src/content/questions';
+import { STORIES } from '../src/content/stories';
 import type { EducationalPayload, Question, Tile } from '../src/engine/types';
 
 const MIN_WORDS = 40;
@@ -160,10 +161,22 @@ function main(): void {
     }
   }
 
+  // Stories: corpus must have ≥ 50 entries with unique ids.
+  if (STORIES.length < 50) {
+    findings.push({ where: 'stories', message: `≥ 50 entries required, got ${STORIES.length}` });
+  }
+  const storyIds = new Set<string>();
+  for (const s of STORIES) {
+    if (storyIds.has(s.id)) {
+      findings.push({ where: `story:${s.id}`, message: 'duplicate story id' });
+    }
+    storyIds.add(s.id);
+  }
+
   if (findings.length === 0) {
     // eslint-disable-next-line no-console
     console.log(
-      `Content OK: ${TILES.length} tiles, ${INVENTION_CARDS.length + EDICT_CARDS.length} cards, ${questionCount} questions.`,
+      `Content OK: ${TILES.length} tiles, ${INVENTION_CARDS.length + EDICT_CARDS.length} cards, ${questionCount} questions, ${STORIES.length} stories.`,
     );
     return;
   }

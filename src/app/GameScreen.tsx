@@ -9,6 +9,7 @@ import { RentModal } from '@/ui/modals/RentModal';
 import { TaxModal } from '@/ui/modals/TaxModal';
 import { PrisonModal } from '@/ui/modals/PrisonModal';
 import { QuestionModal } from '@/ui/modals/QuestionModal';
+import { StoryModal } from '@/ui/modals/StoryModal';
 import { FactsJournal } from '@/ui/modals/FactsJournal';
 import { CameraHint } from '@/ui/CameraHint';
 import { activePlayer } from '@/engine/selectors';
@@ -27,6 +28,8 @@ export function GameScreen() {
   const setPhase = useUiStore((s) => s.setPhase);
   const journalOpen = useUiStore((s) => s.journalOpen);
   const setJournalOpen = useUiStore((s) => s.setJournalOpen);
+  const storyOpen = useUiStore((s) => s.storyOpen);
+  const setStoryOpen = useUiStore((s) => s.setStoryOpen);
   useGameAudio();
 
   // Autosave on state change
@@ -82,11 +85,15 @@ export function GameScreen() {
         dispatch({ type: 'OPEN_TILE_INFO', tileId: active.position });
       } else if (e.key === 'Escape' && journalOpen) {
         setJournalOpen(false);
+      } else if (e.key === 'Escape' && storyOpen) {
+        setStoryOpen(false);
+      } else if (e.key.toLowerCase() === 'h') {
+        setStoryOpen(!storyOpen);
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [state, dispatch, journalOpen, setJournalOpen]);
+  }, [state, dispatch, journalOpen, setJournalOpen, storyOpen, setStoryOpen]);
 
   if (!state) return null;
   const m = state.modal;
@@ -108,6 +115,7 @@ export function GameScreen() {
       {m?.kind === 'tax' && <TaxModal tileId={m.tileId} owed={m.owed} />}
       {inPrisonActive && <PrisonModal />}
       {journalOpen && <FactsJournal />}
+      {storyOpen && <StoryModal />}
     </div>
   );
 }

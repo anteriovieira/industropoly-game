@@ -28,6 +28,7 @@ import { TILES } from '@/content/tiles';
 import { INVENTION_CARDS } from '@/content/invention-cards';
 import { EDICT_CARDS } from '@/content/edict-cards';
 import { QUESTIONS } from '@/content/questions';
+import { STORIES } from '@/content/stories';
 
 const BOARD_SIZE = 40;
 const PRISON_TILE: TileId = 10;
@@ -194,6 +195,9 @@ function handleResolveMovement(state: GameState): GameState {
 
   let s = updateActivePlayer(state, (pl) => ({ ...pl, position: pos, cash: pl.cash + cashDelta }));
   if (cashDelta > 0) s = appendLog(s, `${p.name} passou pelo Início e recebeu £${cashDelta}.`);
+
+  // Record this landing so the next END_TURN's story rotation excludes it.
+  s = { ...s, lastResolvedTileId: pos };
 
   // Go-to-prison is a movement consequence, not a tile rule — apply it before
   // any quiz phase and end the turn.
@@ -510,6 +514,21 @@ export function drawQuestionIndex(rngState: number, count: number): { state: num
   return { state: r.state, index };
 }
 
+// Pick the next story id, excluding the supplied set. Falls back to the full
+// corpus only when exclusions empty the candidate list (corpus is large enough
+// in practice that this never happens). Pure — advances rng deterministically.
+export function pickStoryId(
+  rngState: number,
+  exclude: ReadonlySet<string>,
+): { state: number; storyId: string | null } {
+  if (STORIES.length === 0) return { state: rngState, storyId: null };
+  const candidates = STORIES.filter((s) => !exclude.has(s.id) && !exclude.has(s.sourceRefId));
+  const pool = candidates.length > 0 ? candidates : STORIES;
+  const r = nextUint32(rngState);
+  const story = pool[r.value % pool.length]!;
+  return { state: r.state, storyId: story.id };
+}
+
 // UPGRADE_TILE ------------------------------------------------------------
 
 function handleUpgradeTile(state: GameState, tileId: TileId): GameState {
@@ -785,10 +804,22 @@ function handleEndTurn(state: GameState): GameState {
   if (state.turnPhase === 'awaiting-quiz-answer') return state;
   if (!state.pendingLandingResolved && state.turnPhase !== 'awaiting-end-turn') return state;
   const p = selActive(state);
+
+  // Compute the next story shared between both branches (re-roll on doubles
+  // and rotation to next player). Both are "successful" END_TURN paths.
+  const exclude = new Set<string>();
+  if (state.currentStoryId) exclude.add(state.currentStoryId);
+  if (state.currentQuiz) exclude.add(`tile:${state.currentQuiz.tileId}`);
+  if (state.lastResolvedTileId != null) exclude.add(`tile:${state.lastResolvedTileId}`);
+  const story = pickStoryId(state.rngState, exclude);
+
   if (state.lastRoll?.doubles && !p.inPrison && p.doublesStreak > 0 && p.doublesStreak < 3) {
     // Another roll for the same player.
     return {
       ...state,
+      rngState: story.state,
+      currentStoryId: story.storyId,
+      lastResolvedTileId: null,
       turnPhase: 'awaiting-roll',
       lastRoll: null,
       pendingLandingResolved: false,
@@ -805,6 +836,9 @@ function handleEndTurn(state: GameState): GameState {
 
   let s: GameState = {
     ...state,
+    rngState: story.state,
+    currentStoryId: story.storyId,
+    lastResolvedTileId: null,
     activePlayerIndex: nextIdx,
     turn: state.turn + 1,
     turnPhase: 'awaiting-roll',
