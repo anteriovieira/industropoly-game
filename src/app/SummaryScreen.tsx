@@ -49,6 +49,30 @@ export function SummaryScreen() {
           ))}
         </ol>
 
+        <h3>Desempenho nas Perguntas</h3>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+          <thead>
+            <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(59,43,24,0.4)' }}>
+              <th style={{ padding: '4px 6px' }}>Jogador</th>
+              <th style={{ padding: '4px 6px' }}>Acertos</th>
+              <th style={{ padding: '4px 6px' }}>Erros</th>
+              <th style={{ padding: '4px 6px' }}>Dicas</th>
+              <th style={{ padding: '4px 6px' }}>£ em dicas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {state.players.map((p) => (
+              <tr key={p.id} style={{ borderBottom: '1px solid rgba(59,43,24,0.15)' }}>
+                <td style={{ padding: '4px 6px' }}>{p.name}</td>
+                <td style={{ padding: '4px 6px' }}>{p.quizStats.correct}</td>
+                <td style={{ padding: '4px 6px' }}>{p.quizStats.wrong}</td>
+                <td style={{ padding: '4px 6px' }}>{p.quizStats.hintsBought}</td>
+                <td style={{ padding: '4px 6px' }}>£{p.quizStats.cashSpentOnHints}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
         <h3>O que a mesa aprendeu</h3>
         {tileEntries.length > 0 && (
           <section>

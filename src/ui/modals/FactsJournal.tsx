@@ -15,8 +15,23 @@ export function FactsJournal() {
         <section>
           <h3>Lugares e Indústrias</h3>
           {tileEntries.map((e) => (
-            <article key={`${e.kind}-${e.refId}`} style={{ marginBottom: 14 }}>
+            <article key={`${e.kind}-${e.refId}-${e.questionId ?? 'noq'}`} style={{ marginBottom: 14 }}>
               <strong>{e.title}</strong> — <em>{e.date}</em>
+              {e.answerOutcome && (
+                <span
+                  style={{
+                    marginLeft: 8,
+                    fontSize: '0.8rem',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    background: e.answerOutcome === 'correct' ? 'rgba(31,92,62,0.18)' : 'rgba(138,42,27,0.18)',
+                    color: e.answerOutcome === 'correct' ? '#1f5c3e' : 'var(--danger)',
+                  }}
+                  aria-label={e.answerOutcome === 'correct' ? 'Respondido corretamente' : 'Respondido incorretamente'}
+                >
+                  {e.answerOutcome === 'correct' ? '✓ acertou' : '✗ errou'}
+                </span>
+              )}
               <p style={{ margin: '4px 0' }}>{e.blurb}</p>
               <small style={{ opacity: 0.75 }}>Fonte: {e.source}</small>
             </article>

@@ -4,7 +4,8 @@
 import { TILES } from '../src/content/tiles';
 import { INVENTION_CARDS } from '../src/content/invention-cards';
 import { EDICT_CARDS } from '../src/content/edict-cards';
-import type { EducationalPayload } from '../src/engine/types';
+import { QUESTIONS } from '../src/content/questions';
+import type { EducationalPayload, Question, Tile } from '../src/engine/types';
 
 const MIN_WORDS = 40;
 const MAX_WORDS = 120;
@@ -34,6 +35,52 @@ interface Finding {
 
 function wordCount(s: string): number {
   return s.trim().split(/\s+/).length;
+}
+
+function tileNeedsQuestion(t: Tile): boolean {
+  return t.role !== 'corner';
+}
+
+function validateQuestion(q: Question, where: string): Finding[] {
+  const findings: Finding[] = [];
+  if (!q.id) findings.push({ where, message: 'question id missing' });
+  if (!q.prompt || q.prompt.trim().length < 5) {
+    findings.push({ where, message: 'question prompt missing or too short' });
+  }
+  if (wordCount(q.prompt ?? '') > 25) {
+    findings.push({ where, message: `prompt exceeds 25 words (${wordCount(q.prompt)})` });
+  }
+  if (!q.options || q.options.length < 2 || q.options.length > 4) {
+    findings.push({ where, message: `options must be 2..4, got ${q.options?.length ?? 0}` });
+    return findings;
+  }
+  const ids = new Set<string>();
+  for (const opt of q.options) {
+    if (!opt.id) findings.push({ where, message: 'option id missing' });
+    if (ids.has(opt.id)) findings.push({ where, message: `duplicate option id "${opt.id}"` });
+    ids.add(opt.id);
+    if (!opt.text || opt.text.trim().length === 0) {
+      findings.push({ where, message: `option "${opt.id}" has empty text` });
+    }
+  }
+  if (!ids.has(q.correctOptionId)) {
+    findings.push({ where, message: `correctOptionId "${q.correctOptionId}" is not among options` });
+  }
+  if (!q.source || q.source.length < 5) {
+    findings.push({ where, message: 'question source missing or too short' });
+  }
+  for (const h of q.hints ?? []) {
+    if (h.priceCash < 0) findings.push({ where, message: `hint ${h.id} has negative price` });
+    if (h.kind === 'eliminate-option') {
+      if (!h.payload) findings.push({ where, message: `hint ${h.id} missing target option id` });
+      else if (h.payload === q.correctOptionId) {
+        findings.push({ where, message: `hint ${h.id} cannot eliminate the correct option` });
+      } else if (!ids.has(h.payload)) {
+        findings.push({ where, message: `hint ${h.id} references unknown option "${h.payload}"` });
+      }
+    }
+  }
+  return findings;
 }
 
 function validate(payload: EducationalPayload, where: string): Finding[] {
@@ -98,9 +145,26 @@ function main(): void {
     }
   }
 
+  // Questions: every gameplay-rule tile needs at least one well-formed question.
+  let questionCount = 0;
+  for (const t of TILES) {
+    if (!tileNeedsQuestion(t)) continue;
+    const qs = QUESTIONS[t.id] ?? [];
+    if (qs.length === 0) {
+      findings.push({ where: `questions:tile:${t.id}:${t.name}`, message: 'no question authored for gameplay tile' });
+      continue;
+    }
+    for (const q of qs) {
+      questionCount += 1;
+      findings.push(...validateQuestion(q, `questions:tile:${t.id}:${q.id}`));
+    }
+  }
+
   if (findings.length === 0) {
     // eslint-disable-next-line no-console
-    console.log(`Content OK: ${TILES.length} tiles, ${INVENTION_CARDS.length + EDICT_CARDS.length} cards.`);
+    console.log(
+      `Content OK: ${TILES.length} tiles, ${INVENTION_CARDS.length + EDICT_CARDS.length} cards, ${questionCount} questions.`,
+    );
     return;
   }
   // eslint-disable-next-line no-console

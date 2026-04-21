@@ -41,6 +41,7 @@ export function createInitialState(players: InitialPlayerInput[], seed: number):
     getOutCards: 0,
     bankrupt: false,
     doublesStreak: 0,
+    quizStats: { correct: 0, wrong: 0, hintsBought: 0, cashSpentOnHints: 0 },
   }));
 
   const tiles: Record<number, TileOwnership> = {};
@@ -49,7 +50,7 @@ export function createInitialState(players: InitialPlayerInput[], seed: number):
   }
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     seed: rngSeed,
     rngState: s2.state,
     turn: 1,
@@ -66,6 +67,7 @@ export function createInitialState(players: InitialPlayerInput[], seed: number):
     modal: null,
     pendingCardId: null,
     pendingLandingResolved: false,
+    currentQuiz: null,
     factsJournal: [],
     winner: null,
     status: 'active',

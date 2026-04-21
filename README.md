@@ -46,7 +46,39 @@ openspec/     Specs and change proposals (source of truth for requirements)
 
 ## How the game teaches
 
-Every purchasable tile and every card carries a short, sourced historical blurb. Landing on a tile or drawing a card opens an educational modal before the play effect resolves. A per-game **Facts Journal** records every unique payload the table has seen, and the end-of-game summary recaps the full journal. See `openspec/changes/create-industropoly-game/specs/education-layer/spec.md` for the behavioral contract.
+Every tile and every card carries a short, sourced historical blurb. When a player's token lands on a tile, the game shows a **multiple-choice question** drawn from that tile's content before the rule (buy offer, rent, tax, card draw) runs:
+
+- **Right answer** → the rule resolves normally and the player keeps acting on the tile.
+- **Wrong answer** → the tile's rule is skipped and the turn ends. No buy offer, no rent collected, no card drawn.
+- **Loja de Dicas** → mid-quiz, the player can spend cash to eliminate a wrong option, reveal a clue sentence, or expose the first letter of the correct answer. Hints are content-authored per question.
+
+After every answer the game shows a **"Você sabia?"** panel with the tile's full historical blurb and source — the teach moment lands with the answer in mind. The HUD's **Info (I)** button still opens the standalone tile-info modal for out-of-turn browsing (no quiz). A per-game **Facts Journal** records every question seen and whether it was answered correctly. The end-of-game recap shows per-player quiz stats (acertos / erros / dicas / £ gastas em dicas) alongside the journal. See `openspec/changes/add-tile-quiz-gameplay/specs/tile-quiz-gameplay/spec.md` for the behavioral contract.
+
+### Adding a question
+
+Question content lives in `src/content/questions.ts`, keyed by `tileId`. Every gameplay-rule tile (industry, transport, utility, tax, card-draw) needs at least one entry:
+
+```ts
+1: [
+  {
+    id: 'q-cromford-1',
+    prompt: 'Quem construiu a tecelagem de Cromford…?',
+    options: [
+      { id: 'a', text: 'James Watt' },
+      { id: 'b', text: 'Richard Arkwright' },
+      { id: 'c', text: 'Edmund Cartwright' },
+    ],
+    correctOptionId: 'b',
+    hints: [
+      { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'a' },
+      { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'O sobrenome virou nome de tear.' },
+    ],
+    source: 'R. Fitton, "The Arkwrights: Spinners of Fortune" (1989)',
+  },
+],
+```
+
+Then run `npm run lint:content` — the lint enforces that every gameplay tile has a question, options are 2..4, `correctOptionId` matches an option, sources are present, and `eliminate-option` hints don't target the correct answer.
 
 ## Deploy
 

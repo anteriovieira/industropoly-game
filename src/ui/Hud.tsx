@@ -11,6 +11,7 @@ const PLAYER_COLORS = ['#8a2a1b', '#1f3e52', '#5a2a68', '#6b8e4e'];
 const PHASE_LABELS: Record<TurnPhase, string> = {
   'awaiting-roll': 'aguardando lançamento',
   moving: 'movendo-se',
+  'awaiting-quiz-answer': 'respondendo pergunta',
   'awaiting-land-action': 'resolvendo casa',
   'drawing-card': 'comprando carta',
   'awaiting-end-turn': 'aguardando fim do turno',
@@ -26,8 +27,9 @@ export function Hud() {
 
   const active = activePlayer(state);
   const phase = state.turnPhase;
+  const inQuiz = phase === 'awaiting-quiz-answer';
   const canRoll = phase === 'awaiting-roll' && !active.inPrison;
-  const canResolveMove = phase === 'moving';
+  const canResolveMove = phase === 'moving' && !inQuiz;
   const canLand = phase === 'awaiting-land-action';
   const canEnd = phase === 'awaiting-end-turn' && state.pendingLandingResolved;
   const canInfo = (phase === 'awaiting-roll' || phase === 'awaiting-end-turn') && !state.modal;
@@ -80,6 +82,10 @@ export function Hud() {
               {p.name}
             </div>
             <div style={{ fontSize: '0.9rem' }}>£{p.cash}</div>
+            <div style={{ fontSize: '0.75rem', opacity: 0.75 }} title="Acertos / erros / dicas">
+              ✓ {p.quizStats.correct} · ✗ {p.quizStats.wrong}
+              {p.quizStats.hintsBought > 0 ? ` · 💡${p.quizStats.hintsBought}` : ''}
+            </div>
             {p.inPrison && (
               <div style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>Preso</div>
             )}

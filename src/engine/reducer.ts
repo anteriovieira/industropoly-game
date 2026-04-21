@@ -10,21 +10,24 @@ import type {
   Action,
   Card,
   CardEffect,
+  CurrentQuiz,
   DeckId,
   GameState,
   JournalEntry,
   ModalRequest,
   Player,
   PlayerId,
+  Question,
   Tile,
   TileId,
 } from './types';
 import { MAX_TIER, PASS_START_BONUS, PRISON_FEE } from './types';
-import { rollD6 } from './rng';
+import { nextUint32, rollD6 } from './rng';
 import { activePlayer as selActive, computeRent, netWorth, ownsSector } from './selectors';
 import { TILES } from '@/content/tiles';
 import { INVENTION_CARDS } from '@/content/invention-cards';
 import { EDICT_CARDS } from '@/content/edict-cards';
+import { QUESTIONS } from '@/content/questions';
 
 const BOARD_SIZE = 40;
 const PRISON_TILE: TileId = 10;
@@ -69,6 +72,10 @@ export function reducer(state: GameState, action: Action): GameState {
       return handleUseGetOut(state);
     case 'PRISON_ROLL':
       return handlePrisonRoll(state);
+    case 'ANSWER_QUESTION':
+      return handleAnswerQuestion(state, action.optionId);
+    case 'BUY_HINT':
+      return handleBuyHint(state, action.hintId);
     case 'END_TURN':
       return handleEndTurn(state);
     default:
@@ -187,7 +194,50 @@ function handleResolveMovement(state: GameState): GameState {
 
   let s = updateActivePlayer(state, (pl) => ({ ...pl, position: pos, cash: pl.cash + cashDelta }));
   if (cashDelta > 0) s = appendLog(s, `${p.name} passou pelo Início e recebeu £${cashDelta}.`);
-  return { ...s, turnPhase: 'awaiting-land-action' };
+
+  // Go-to-prison is a movement consequence, not a tile rule — apply it before
+  // any quiz phase and end the turn.
+  const tile = TILE_INDEX[pos]!;
+  if (tile.role === 'corner' && tile.corner === 'go-to-prison') {
+    s = sendActiveToPrison(s, 'flagrado por fraude');
+    s = recordTileFact(s, pos);
+    return { ...s, turnPhase: 'awaiting-end-turn', pendingLandingResolved: true };
+  }
+
+  // Corner tiles with no rule skip the quiz entirely.
+  if (!tileNeedsQuiz(tile)) {
+    s = recordTileFact(s, pos);
+    return { ...s, turnPhase: 'awaiting-end-turn', pendingLandingResolved: true };
+  }
+
+  // Gate the tile's rule behind a quiz.
+  return startQuizForTile(s, pos);
+}
+
+function tileNeedsQuiz(tile: Tile): boolean {
+  return tile.role !== 'corner';
+}
+
+function startQuizForTile(state: GameState, tileId: TileId): GameState {
+  const questions = QUESTIONS[tileId] ?? [];
+  if (questions.length === 0) {
+    // No content — fall back to direct landing so content gaps don't block play.
+    return { ...state, turnPhase: 'awaiting-land-action' };
+  }
+  const draw = drawQuestionIndex(state.rngState, questions.length);
+  const q = questions[draw.index]!;
+  const quiz: CurrentQuiz = {
+    tileId,
+    questionId: q.id,
+    revealedHints: [],
+    eliminatedOptionIds: [],
+  };
+  return {
+    ...state,
+    rngState: draw.state,
+    turnPhase: 'awaiting-quiz-answer',
+    currentQuiz: quiz,
+  };
 }
 
 // RESOLVE_LANDING ---------------------------------------------------------
@@ -197,35 +247,33 @@ function handleResolveLanding(state: GameState): GameState {
   const p = selActive(state);
   const t = TILE_INDEX[p.position]!;
 
+  // Journal entry for the tile is written on quiz answer. For tiles that can
+  // reach this handler without a quiz (e.g. card-effect relocations), record
+  // here as a fallback so the entry still appears.
   let s = recordTileFact(state, p.position);
 
   switch (t.role) {
     case 'corner': {
-      if (t.corner === 'go-to-prison') {
-        s = sendActiveToPrison(s, 'flagrado por fraude');
-        return { ...s, turnPhase: 'awaiting-end-turn', pendingLandingResolved: true };
-      }
-      // start, prison (just visiting), public-square: nothing special
-      s = setModal(s, { kind: 'tile-info', tileId: p.position });
-      return { ...s, pendingLandingResolved: true };
+      // go-to-prison is handled before the quiz in movement resolution.
+      // Other corners just end the turn with no UI side-effect (info is shown
+      // alongside the quiz result, not here).
+      return { ...s, turnPhase: 'awaiting-end-turn', pendingLandingResolved: true };
     }
     case 'industry':
     case 'transport':
     case 'utility': {
       const o = s.tiles[t.id]!;
       if (!o.owner) {
-        // Available for purchase
+        // Available for purchase — surface the buy offer.
         s = setModal(s, { kind: 'tile-info', tileId: p.position });
         return { ...s, pendingLandingResolved: false };
       }
       if (o.owner === p.id || o.mortgaged) {
-        s = setModal(s, { kind: 'tile-info', tileId: p.position });
-        return { ...s, pendingLandingResolved: true };
+        return { ...s, pendingLandingResolved: true, turnPhase: 'awaiting-end-turn' };
       }
       const owed = computeRent(s, t.id, s.lastRoll?.total ?? 0);
       if (owed <= 0) {
-        s = setModal(s, { kind: 'tile-info', tileId: p.position });
-        return { ...s, pendingLandingResolved: true };
+        return { ...s, pendingLandingResolved: true, turnPhase: 'awaiting-end-turn' };
       }
       s = setModal(s, { kind: 'rent', tileId: t.id, owed });
       return { ...s, pendingLandingResolved: false };
@@ -323,6 +371,7 @@ function handleOpenTileInfo(state: GameState, tileId: TileId): GameState {
 // BUY_TILE / DECLINE_BUY --------------------------------------------------
 
 function handleBuyTile(state: GameState): GameState {
+  if (state.turnPhase === 'awaiting-quiz-answer') return state;
   const p = selActive(state);
   const t = TILE_INDEX[p.position]!;
   if (t.role !== 'industry' && t.role !== 'transport' && t.role !== 'utility') return state;
@@ -340,6 +389,125 @@ function handleBuyTile(state: GameState): GameState {
 function handleDeclineBuy(state: GameState): GameState {
   if (state.turnPhase !== 'awaiting-land-action') return state;
   return { ...state, modal: null, pendingLandingResolved: true, turnPhase: 'awaiting-end-turn' };
+}
+
+// Quiz actions ------------------------------------------------------------
+
+function handleAnswerQuestion(state: GameState, optionId: string): GameState {
+  if (state.turnPhase !== 'awaiting-quiz-answer' || !state.currentQuiz) return state;
+  const q = getQuestion(state.currentQuiz);
+  if (!q) return state;
+  const opt = q.options.find((o) => o.id === optionId);
+  if (!opt) return state;
+
+  const correct = optionId === q.correctOptionId;
+  const outcome: 'correct' | 'wrong' = correct ? 'correct' : 'wrong';
+
+  // Record journal entry once per (tileId, questionId) pair.
+  let s = recordQuizJournal(state, state.currentQuiz.tileId, q, outcome);
+
+  s = updateActivePlayer(s, (pl) => ({
+    ...pl,
+    quizStats: correct
+      ? { ...pl.quizStats, correct: pl.quizStats.correct + 1 }
+      : { ...pl.quizStats, wrong: pl.quizStats.wrong + 1 },
+  }));
+
+  const p = selActive(s);
+  s = appendLog(
+    s,
+    `${p.name} respondeu ${correct ? 'corretamente' : 'incorretamente'} a pergunta da casa.`,
+  );
+
+  if (correct) {
+    // Clear quiz, unlock the tile rule.
+    s = { ...s, currentQuiz: null, turnPhase: 'awaiting-land-action' };
+    return handleResolveLanding(s);
+  }
+
+  // Wrong answer: skip the tile rule entirely. Turn ends.
+  // Reset doublesStreak so END_TURN does not grant another roll even if the
+  // player rolled doubles this turn.
+  s = updateActivePlayer(s, (pl) => ({ ...pl, doublesStreak: 0 }));
+  return {
+    ...s,
+    currentQuiz: null,
+    turnPhase: 'awaiting-end-turn',
+    pendingLandingResolved: true,
+    modal: null,
+  };
+}
+
+function handleBuyHint(state: GameState, hintId: string): GameState {
+  if (state.turnPhase !== 'awaiting-quiz-answer' || !state.currentQuiz) return state;
+  const q = getQuestion(state.currentQuiz);
+  if (!q) return state;
+  if (state.currentQuiz.revealedHints.includes(hintId)) return state;
+  const hint = q.hints.find((h) => h.id === hintId);
+  if (!hint) return state;
+  const p = selActive(state);
+  if (p.cash < hint.priceCash) return state;
+
+  const revealedHints = [...state.currentQuiz.revealedHints, hintId];
+  const eliminatedOptionIds =
+    hint.kind === 'eliminate-option' && !state.currentQuiz.eliminatedOptionIds.includes(hint.payload)
+      ? [...state.currentQuiz.eliminatedOptionIds, hint.payload]
+      : state.currentQuiz.eliminatedOptionIds;
+
+  let s: GameState = {
+    ...state,
+    currentQuiz: { ...state.currentQuiz, revealedHints, eliminatedOptionIds },
+  };
+  s = updateActivePlayer(s, (pl) => ({
+    ...pl,
+    cash: pl.cash - hint.priceCash,
+    quizStats: {
+      ...pl.quizStats,
+      hintsBought: pl.quizStats.hintsBought + 1,
+      cashSpentOnHints: pl.quizStats.cashSpentOnHints + hint.priceCash,
+    },
+  }));
+  s = appendLog(s, `${p.name} comprou uma dica por £${hint.priceCash}.`);
+  return s;
+}
+
+function getQuestion(q: CurrentQuiz): Question | undefined {
+  return (QUESTIONS[q.tileId] ?? []).find((x) => x.id === q.questionId);
+}
+
+function recordQuizJournal(
+  state: GameState,
+  tileId: TileId,
+  question: Question,
+  outcome: 'correct' | 'wrong',
+): GameState {
+  const key = `tile:${tileId}:${question.id}`;
+  const exists = state.factsJournal.some(
+    (e) => e.kind === 'tile' && e.refId === String(tileId) && e.questionId === question.id,
+  );
+  if (exists) return state;
+  const t = TILE_INDEX[tileId]!;
+  const entry: JournalEntry = {
+    kind: 'tile',
+    refId: String(tileId),
+    title: t.education.title,
+    date: t.education.date,
+    blurb: t.education.blurb,
+    source: t.education.source,
+    seenAtTurn: state.turn,
+    questionId: question.id,
+    answerOutcome: outcome,
+  };
+  void key;
+  return { ...state, factsJournal: [...state.factsJournal, entry] };
+}
+
+// Draw a deterministic question index from the current rngState, advancing the
+// rng. Pure — same (rngState, tileId) maps to the same index every time.
+export function drawQuestionIndex(rngState: number, count: number): { state: number; index: number } {
+  const r = nextUint32(rngState);
+  const index = count > 0 ? r.value % count : 0;
+  return { state: r.state, index };
 }
 
 // UPGRADE_TILE ------------------------------------------------------------
@@ -395,6 +563,7 @@ function handleRedeem(state: GameState, tileId: TileId): GameState {
 // DRAW_CARD / APPLY_CARD --------------------------------------------------
 
 function handleDrawCard(state: GameState, deck: DeckId): GameState {
+  if (state.turnPhase === 'awaiting-quiz-answer') return state;
   const d = state.decks[deck];
   if (d.draw.length === 0) return state;
   const [id, ...rest] = d.draw;
@@ -416,6 +585,7 @@ function handleDrawCard(state: GameState, deck: DeckId): GameState {
 }
 
 function handleApplyCard(state: GameState): GameState {
+  if (state.turnPhase === 'awaiting-quiz-answer') return state;
   const id = state.pendingCardId;
   if (!id) return { ...state, modal: null };
   const card = CARD_INDEX[id];
@@ -612,6 +782,7 @@ function handlePrisonRoll(state: GameState): GameState {
 // END_TURN ----------------------------------------------------------------
 
 function handleEndTurn(state: GameState): GameState {
+  if (state.turnPhase === 'awaiting-quiz-answer') return state;
   if (!state.pendingLandingResolved && state.turnPhase !== 'awaiting-end-turn') return state;
   const p = selActive(state);
   if (state.lastRoll?.doubles && !p.inPrison && p.doublesStreak > 0 && p.doublesStreak < 3) {

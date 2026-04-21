@@ -1,7 +1,8 @@
 import type { GameState } from '@/engine/types';
 
-const KEY = 'industropoly:savegame:v1';
-const CURRENT_SCHEMA = 1;
+const KEY = 'industropoly:savegame:v2';
+const CURRENT_SCHEMA = 2;
+const LEGACY_KEYS = ['industropoly:savegame:v1'];
 const MAX_BYTES = 2 * 1024 * 1024;
 
 export interface LoadResult {
@@ -9,17 +10,42 @@ export interface LoadResult {
   notice: string | null;
 }
 
-export function load(): LoadResult {
+// Pure, unit-testable loader: given a raw JSON string (or null), return the
+// migration decision. Useful for tests that don't want to touch localStorage.
+export function parseSave(raw: string | null): LoadResult {
+  if (!raw) return { state: null, notice: null };
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return { state: null, notice: null };
-    const parsed = JSON.parse(raw) as GameState;
+    const parsed = JSON.parse(raw) as Partial<GameState>;
     if (typeof parsed !== 'object' || parsed === null) throw new Error('corrupt');
     if (parsed.schemaVersion !== CURRENT_SCHEMA) {
-      localStorage.removeItem(KEY);
-      return { state: null, notice: 'Jogo salvo incompatível — começando um novo.' };
+      return { state: null, notice: 'Formato de save atualizado — começando um novo jogo.' };
     }
-    return { state: parsed, notice: null };
+    return { state: parsed as GameState, notice: null };
+  } catch {
+    return { state: null, notice: 'Jogo salvo corrompido — começando um novo.' };
+  }
+}
+
+export function load(): LoadResult {
+  // Drop legacy-schema saves up front so they don't linger between sessions.
+  for (const legacy of LEGACY_KEYS) {
+    try {
+      if (localStorage.getItem(legacy) != null) localStorage.removeItem(legacy);
+    } catch {
+      // ignore
+    }
+  }
+  try {
+    const raw = localStorage.getItem(KEY);
+    const result = parseSave(raw);
+    if (result.notice != null) {
+      try {
+        localStorage.removeItem(KEY);
+      } catch {
+        // ignore
+      }
+    }
+    return result;
   } catch {
     try {
       localStorage.removeItem(KEY);

@@ -8,6 +8,7 @@ import { CardModal } from '@/ui/modals/CardModal';
 import { RentModal } from '@/ui/modals/RentModal';
 import { TaxModal } from '@/ui/modals/TaxModal';
 import { PrisonModal } from '@/ui/modals/PrisonModal';
+import { QuestionModal } from '@/ui/modals/QuestionModal';
 import { FactsJournal } from '@/ui/modals/FactsJournal';
 import { CameraHint } from '@/ui/CameraHint';
 import { activePlayer } from '@/engine/selectors';
@@ -98,7 +99,8 @@ export function GameScreen() {
       </div>
       <Hud />
       <CameraHint />
-      {m?.kind === 'tile-info' && (
+      {state.turnPhase === 'awaiting-quiz-answer' && state.currentQuiz && <QuestionModal />}
+      {m?.kind === 'tile-info' && state.turnPhase !== 'awaiting-quiz-answer' && (
         <TileInfoModal tileId={m.tileId} readOnly={m.readOnly ?? false} />
       )}
       {m?.kind === 'card' && <CardModal cardId={m.cardId} />}

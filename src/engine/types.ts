@@ -104,6 +104,13 @@ export interface Card {
   education: EducationalPayload;
 }
 
+export interface QuizStats {
+  correct: number;
+  wrong: number;
+  hintsBought: number;
+  cashSpentOnHints: number;
+}
+
 export interface Player {
   id: PlayerId;
   name: string;
@@ -115,6 +122,7 @@ export interface Player {
   getOutCards: number;
   bankrupt: boolean;
   doublesStreak: number; // consecutive doubles this turn (0..2)
+  quizStats: QuizStats;
 }
 
 export interface TileOwnership {
@@ -126,11 +134,45 @@ export interface TileOwnership {
 export type TurnPhase =
   | 'awaiting-roll'
   | 'moving'
+  | 'awaiting-quiz-answer'
   | 'awaiting-land-action'
   | 'drawing-card'
   | 'awaiting-end-turn'
   | 'in-prison-decision'
   | 'game-over';
+
+export type QuizHintKind = 'eliminate-option' | 'clue-text' | 'first-letter';
+
+export interface QuizOption {
+  id: string; // 'a' | 'b' | 'c' | 'd' (authored)
+  text: string;
+}
+
+export interface QuizHint {
+  id: string;
+  kind: QuizHintKind;
+  priceCash: number;
+  // For `eliminate-option`: target option id.
+  // For `clue-text`: the clue sentence shown to the player.
+  // For `first-letter`: unused (UI derives from correct option's text).
+  payload: string;
+}
+
+export interface Question {
+  id: string;
+  prompt: string;
+  options: readonly QuizOption[]; // 2..4 options
+  correctOptionId: string;
+  hints: readonly QuizHint[];
+  source: string;
+}
+
+export interface CurrentQuiz {
+  tileId: TileId;
+  questionId: string;
+  revealedHints: string[]; // hint ids already purchased
+  eliminatedOptionIds: string[]; // from eliminate-option hints
+}
 
 export type ModalRequest =
   | { kind: 'tile-info'; tileId: TileId; readOnly?: boolean }
@@ -148,10 +190,13 @@ export interface JournalEntry {
   blurb: string;
   source: string;
   seenAtTurn: number;
+  // Only set on tile entries produced by answering a landing quiz.
+  questionId?: string;
+  answerOutcome?: 'correct' | 'wrong';
 }
 
 export interface GameState {
-  schemaVersion: 1;
+  schemaVersion: 2;
   seed: number;
   rngState: number;
   turn: number; // turn counter (increments on END_TURN)
@@ -172,6 +217,9 @@ export interface GameState {
   modal: ModalRequest;
   pendingCardId: string | null; // card drawn but not yet applied
   pendingLandingResolved: boolean; // true after land effect applied, required before end-turn
+
+  // Live quiz shown during `awaiting-quiz-answer`. Null in any other phase.
+  currentQuiz: CurrentQuiz | null;
 
   factsJournal: JournalEntry[];
   winner: PlayerId | null;
@@ -197,6 +245,8 @@ export type Action =
   | { type: 'PAY_PRISON_FEE' }
   | { type: 'USE_GET_OUT_CARD' }
   | { type: 'PRISON_ROLL' } // try to roll doubles to escape
+  | { type: 'ANSWER_QUESTION'; optionId: string }
+  | { type: 'BUY_HINT'; hintId: string }
   | { type: 'END_TURN' };
 
 export const PRISON_FEE = 50;
