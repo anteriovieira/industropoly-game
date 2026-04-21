@@ -58,10 +58,9 @@ export function SetupScreen() {
         inset: 0,
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'flex-start',
+        alignItems: 'stretch',
         padding: 'clamp(12px, 3vw, 32px)',
         background: 'linear-gradient(#1a120a, #342410)',
-        overflow: 'auto',
       }}
     >
       <Parchment
@@ -69,14 +68,17 @@ export function SetupScreen() {
         style={{
           width: '100%',
           maxWidth: 1080,
+          maxHeight: '100%',
           display: 'flex',
           flexDirection: 'column',
           gap: 0,
+          minHeight: 0,
         }}
       >
         {/* Header */}
         <header
           style={{
+            flex: '0 0 auto',
             padding: 'clamp(16px, 3vw, 28px) clamp(20px, 3vw, 32px)',
             borderBottom: '1px solid rgba(59, 43, 24, 0.25)',
             display: 'flex',
@@ -115,6 +117,10 @@ export function SetupScreen() {
         {/* Player cards */}
         <div
           style={{
+            flex: '1 1 auto',
+            minHeight: 0,
+            overflow: 'auto',
+            WebkitOverflowScrolling: 'touch',
             padding: 'clamp(16px, 3vw, 24px)',
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
@@ -136,6 +142,7 @@ export function SetupScreen() {
         {/* Footer */}
         <footer
           style={{
+            flex: '0 0 auto',
             padding: 'clamp(14px, 2vw, 20px) clamp(20px, 3vw, 32px)',
             borderTop: '1px solid rgba(59, 43, 24, 0.25)',
             display: 'flex',

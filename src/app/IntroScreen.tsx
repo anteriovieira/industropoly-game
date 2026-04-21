@@ -8,13 +8,16 @@ export function IntroScreen() {
       style={{
         position: 'fixed',
         inset: 0,
-        display: 'grid',
-        placeItems: 'center',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'safe center',
         padding: 24,
+        overflow: 'auto',
+        WebkitOverflowScrolling: 'touch',
         background: 'linear-gradient(#1a120a, #342410)',
       }}
     >
-      <Parchment padding={36} style={{ maxWidth: 680 }}>
+      <Parchment padding={36} style={{ maxWidth: 680, margin: 'auto 0' }}>
         <h1 style={{ marginTop: 0 }}>Industropoly</h1>
         <p style={{ fontStyle: 'italic', marginTop: 0 }}>
           Manchester, 1785 — a era do vapor está amanhecendo.
