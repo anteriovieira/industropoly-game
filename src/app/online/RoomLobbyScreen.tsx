@@ -40,6 +40,22 @@ export function RoomLobbyScreen() {
   const players = members.filter((m) => m.role === 'player').sort((a, b) => (a.seat_index ?? 0) - (b.seat_index ?? 0));
   const isHost = me && players[0]?.user_id === me.user_id;
 
+  const shareUrl = room
+    ? `${window.location.origin}${window.location.pathname}?room=${room.code}`
+    : '';
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Fallback: select the text; user can Ctrl+C.
+    }
+  }
+
   async function handleStart() {
     if (!roomId || !userId) return;
     if (players.length < 2) { setError('Precisa de pelo menos 2 jogadores'); return; }
@@ -78,11 +94,33 @@ export function RoomLobbyScreen() {
       <Parchment padding="32px 40px" framed style={{ maxWidth: 520 }}>
         <h1 style={{ marginTop: 0 }}>Sala</h1>
         {room && (
-          <p style={{ fontSize: '1.4rem', letterSpacing: 2 }}>
-            Código: <strong>{room.code}</strong>
-          </p>
+          <>
+            <p style={{ fontSize: '1.4rem', letterSpacing: 2, marginBottom: 4 }}>
+              Código: <strong>{room.code}</strong>
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                alignItems: 'center',
+                marginBottom: 12,
+                flexWrap: 'wrap',
+              }}
+            >
+              <input
+                readOnly
+                value={shareUrl}
+                onFocus={(e) => e.currentTarget.select()}
+                style={{ flex: 1, minWidth: 240, padding: 6, fontSize: 13 }}
+                aria-label="Link de convite"
+              />
+              <button onClick={handleCopy} className="primary" style={{ padding: '6px 12px' }}>
+                {copied ? 'Copiado!' : 'Copiar link'}
+              </button>
+            </div>
+          </>
         )}
-        <p>Compartilhe o código com os outros jogadores. A partida começa quando o host clicar em "Iniciar".</p>
+        <p>Compartilhe o código ou o link com os outros jogadores. A partida começa quando o host clicar em "Iniciar".</p>
 
         <h2>Jogadores ({players.length}/4)</h2>
         <ul>

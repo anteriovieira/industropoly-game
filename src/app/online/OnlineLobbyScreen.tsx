@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Parchment } from '@/ui/Parchment';
 import { useUiStore } from '@/state/uiStore';
 import { ensureAnonymousUser, isSupabaseConfigured } from '@/realtime/supabaseClient';
@@ -12,6 +12,12 @@ export function OnlineLobbyScreen() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Prefill the code from ?room= in the URL so shared links land here with the field ready.
+  useEffect(() => {
+    const urlCode = new URL(window.location.href).searchParams.get('room');
+    if (urlCode) setCode(urlCode);
+  }, []);
 
   if (!isSupabaseConfigured()) {
     return (

@@ -11,6 +11,23 @@ export async function createRoom(nickname: string, color?: string): Promise<{ id
   return data as { id: string; code: string };
 }
 
+/**
+ * Returns the user's most recent non-finished membership, or null.
+ * Used on app boot to resume into the active room.
+ */
+export async function findActiveMembership(userId: string): Promise<{ room: RoomRow } | null> {
+  const { data: rows, error } = await getSupabase()
+    .from('room_members')
+    .select('room_id, rooms:room_id(*)')
+    .eq('user_id', userId);
+  if (error) throw error;
+  const candidates = ((rows ?? []) as unknown as { rooms: RoomRow | RoomRow[] | null }[])
+    .flatMap((r) => (Array.isArray(r.rooms) ? r.rooms : r.rooms ? [r.rooms] : []))
+    .filter((r) => r.status === 'lobby' || r.status === 'in_game')
+    .sort((a, b) => b.last_activity_at.localeCompare(a.last_activity_at));
+  return candidates[0] ? { room: candidates[0] } : null;
+}
+
 export async function findRoomByCode(code: string): Promise<RoomRow | null> {
   const { data, error } = await getSupabase()
     .from('rooms')

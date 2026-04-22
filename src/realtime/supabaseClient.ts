@@ -39,3 +39,10 @@ export async function ensureAnonymousUser(): Promise<string> {
   if (!data.user) throw new Error('signInAnonymously returned no user');
   return data.user.id;
 }
+
+/** Returns the current user id if a session exists, without creating one. */
+export async function getExistingUserId(): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null;
+  const { data } = await getSupabase().auth.getUser();
+  return data.user?.id ?? null;
+}
