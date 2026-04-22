@@ -79,6 +79,29 @@ export function OnlineGameContainer() {
     onBroadcast: (ev) => channelCbsRef.current.onBroadcast(ev),
   });
 
+  useEffect(() => {
+    if (!roomId || members.length === 0) return;
+    const gameStoreApi = useGameStore;
+    const original = gameStoreApi.getState().dispatch;
+    gameStoreApi.setState({
+      dispatch: (action: Action) => {
+        onlineStore.getState().dispatch(action);
+        if (action.type === 'END_TURN') {
+          const state = onlineStore.getState().state;
+          if (!state) return;
+          const players = members.filter((m) => m.role === 'player').sort((a, b) => (a.seat_index ?? 0) - (b.seat_index ?? 0));
+          if (players.length === 0) return;
+          const nextSeat = (state.activePlayerIndex + 1) % players.length;
+          const nextUserId = players[nextSeat]!.user_id;
+          import('@/realtime/roomsApi').then((mod) => mod.setCurrentPlayer(roomId, nextUserId).catch(console.error));
+        }
+      },
+    });
+    return () => {
+      gameStoreApi.setState({ dispatch: original });
+    };
+  }, [members, onlineStore, roomId]);
+
   if (!bootstrapped) return <div style={{ padding: 24 }}>Carregando partida…</div>;
   return <GameScreen />;
 }
