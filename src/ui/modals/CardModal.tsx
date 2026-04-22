@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
+import { CardDrawAnimation } from './CardDrawAnimation';
 import { useGameStore } from '@/state/gameStore';
 import { INVENTION_CARDS } from '@/content/invention-cards';
 import { EDICT_CARDS } from '@/content/edict-cards';
@@ -76,7 +78,17 @@ const TONE_STYLE: Record<Tone, { accent: string; soft: string; label: string }> 
 export function CardModal({ cardId }: { cardId: string }) {
   const dispatch = useGameStore((s) => s.dispatch);
   const card: Card | undefined = INDEX[cardId];
+  // Draw animation plays on mount; once it finishes, the detailed modal swaps
+  // in. `revealed` is keyed off cardId so a new card re-runs the sequence.
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    setRevealed(false);
+  }, [cardId]);
+
   if (!card) return null;
+  if (!revealed) {
+    return <CardDrawAnimation card={card} onDone={() => setRevealed(true)} />;
+  }
 
   const deckName = card.deck === 'invention' ? 'Baralho de Invenções' : 'Baralho de Editais';
   const t = tone(card.effect);
