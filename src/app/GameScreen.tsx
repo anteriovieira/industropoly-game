@@ -82,7 +82,6 @@ export function GameScreen() {
       const p = activePlayer(state);
       if (e.code === 'Space' && state.turnPhase === 'awaiting-roll' && !p.inPrison) {
         e.preventDefault();
-        useUiStore.getState().bumpDiceRoll();
         dispatch({ type: 'ROLL_DICE' });
       } else if (
         (e.key.toLowerCase() === 'e' || e.code === 'Space') &&
@@ -108,7 +107,6 @@ export function GameScreen() {
         const next = state.players[nextIdx]!;
         dispatch({ type: 'END_TURN' });
         if (!next.inPrison) {
-          useUiStore.getState().bumpDiceRoll();
           dispatch({ type: 'ROLL_DICE' });
         }
       } else if (e.key.toLowerCase() === 'b' && state.modal?.kind === 'tile-info') {

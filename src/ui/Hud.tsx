@@ -83,7 +83,6 @@ export function Hud() {
   const setPhase = useUiStore((s) => s.setPhase);
   const setNotice = useUiStore((s) => s.setNotice);
   const resetCamera = useUiStore((s) => s.resetCamera);
-  const bumpDiceRoll = useUiStore((s) => s.bumpDiceRoll);
   const [confirmingQuit, setConfirmingQuit] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<PlayerId>>(new Set());
   const [shakeEnabled, setShakeEnabled] = useState<boolean>(loadShakePref);
@@ -196,11 +195,9 @@ export function Hud() {
       // them unless they're in prison — in that case the reducer would
       // reject ROLL_DICE and the prison-decision UI takes over.
       if (!nextRoller.inPrison) {
-        bumpDiceRoll();
         dispatch({ type: 'ROLL_DICE' });
       }
     } else if (canRoll) {
-      bumpDiceRoll();
       dispatch({ type: 'ROLL_DICE' });
     }
   }
