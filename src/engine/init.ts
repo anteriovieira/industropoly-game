@@ -46,6 +46,7 @@ export function createInitialState(players: InitialPlayerInput[], seed: number):
     getOutCards: 0,
     bankrupt: false,
     doublesStreak: 0,
+    correctAnswerStreak: 0,
     quizStats: { correct: 0, wrong: 0, hintsBought: 0, cashSpentOnHints: 0 },
   }));
 

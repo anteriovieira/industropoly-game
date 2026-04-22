@@ -54,6 +54,7 @@ export function HudMenu({
   return (
     <div ref={rootRef} style={{ position: 'relative' }}>
       <button
+        className="icon-only"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Menu"
@@ -62,8 +63,9 @@ export function HudMenu({
           audio.play('click');
           setOpen((o) => !o);
         }}
+        style={{ fontSize: '1.3rem', lineHeight: 1, padding: '0.5rem 0.7rem' }}
       >
-        ☰ Menu
+        ☰
       </button>
 
       {open && (
@@ -71,8 +73,8 @@ export function HudMenu({
           role="menu"
           style={{
             position: 'absolute',
-            bottom: 'calc(100% + 8px)',
-            right: 0,
+            top: 'calc(100% + 8px)',
+            left: 0,
             minWidth: 260,
             zIndex: 20,
           }}

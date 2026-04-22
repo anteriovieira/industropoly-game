@@ -21,7 +21,14 @@ import type {
   Tile,
   TileId,
 } from './types';
-import { MAX_TIER, PASS_START_BONUS, PRISON_FEE } from './types';
+import {
+  CONSOLATION_MOVE_STEPS,
+  MAX_TIER,
+  PASS_START_BONUS,
+  PRISON_FEE,
+  STREAK_BONUS_AMOUNT,
+  STREAK_BONUS_THRESHOLD,
+} from './types';
 import { nextUint32, rollD6 } from './rng';
 import { activePlayer as selActive, computeRent, netWorth, ownsSector } from './selectors';
 import { TILES } from '@/content/tiles';
@@ -428,12 +435,21 @@ function handleAnswerQuestion(state: GameState, optionId: string): GameState {
   // Record journal entry once per (tileId, questionId) pair.
   let s = recordQuizJournal(state, state.currentQuiz.tileId, q, outcome);
 
-  s = updateActivePlayer(s, (pl) => ({
-    ...pl,
-    quizStats: correct
-      ? { ...pl.quizStats, correct: pl.quizStats.correct + 1 }
-      : { ...pl.quizStats, wrong: pl.quizStats.wrong + 1 },
-  }));
+  // Update quiz stats + streak in a single player patch.
+  s = updateActivePlayer(s, (pl) => {
+    if (correct) {
+      return {
+        ...pl,
+        quizStats: { ...pl.quizStats, correct: pl.quizStats.correct + 1 },
+        correctAnswerStreak: pl.correctAnswerStreak + 1,
+      };
+    }
+    return {
+      ...pl,
+      quizStats: { ...pl.quizStats, wrong: pl.quizStats.wrong + 1 },
+      correctAnswerStreak: 0,
+    };
+  });
 
   const p = selActive(s);
   s = appendLog(
@@ -442,22 +458,71 @@ function handleAnswerQuestion(state: GameState, optionId: string): GameState {
   );
 
   if (correct) {
+    // Award streak bonus every Nth consecutive correct answer, then reset the
+    // streak so the next bonus requires another full run.
+    const streak = selActive(s).correctAnswerStreak;
+    if (streak >= STREAK_BONUS_THRESHOLD) {
+      s = updateActivePlayer(s, (pl) => ({
+        ...pl,
+        cash: pl.cash + STREAK_BONUS_AMOUNT,
+        correctAnswerStreak: 0,
+      }));
+      s = appendLog(
+        s,
+        `${p.name} emendou ${STREAK_BONUS_THRESHOLD} acertos seguidos e recebeu R$${STREAK_BONUS_AMOUNT} de bonificação.`,
+      );
+    }
     // Quiz passed — NOW roll the dice. The 3-doubles prison check runs inside
     // performRoll. GameScreen auto-dispatches RESOLVE_MOVEMENT once turnPhase
     // enters `moving`. The dice 'fall' animation triggers off lastRoll change.
     return performRoll({ ...s, currentQuiz: null });
   }
 
-  // Wrong answer: token stays parked. Clear lastRoll so no movement animation
-  // fires, and reset doublesStreak so a doubles roll doesn't grant another go.
+  // Wrong answer: reset doublesStreak and apply a consolation move —
+  // the player advances CONSOLATION_MOVE_STEPS tile(s) forward (banking the
+  // pass-start bonus if they cross Manchester), but NO landing effect fires:
+  // no purchase, no rent, no card draw. On the next turn they'll face the
+  // quiz of whatever tile they drifted to.
   s = updateActivePlayer(s, (pl) => ({ ...pl, doublesStreak: 0 }));
+  return applyConsolationMove({ ...s, currentQuiz: null, modal: null });
+}
+
+// Moves the active player CONSOLATION_MOVE_STEPS forward with pass-start
+// bonus. Go-to-prison mid-step still sends the player to jail (thematically
+// consistent with the normal movement rule). All other tiles are entered
+// "parked" — no landing resolution runs.
+function applyConsolationMove(state: GameState): GameState {
+  const p = selActive(state);
+  let pos = p.position;
+  let cashDelta = 0;
+  for (let i = 0; i < CONSOLATION_MOVE_STEPS; i++) {
+    pos = (pos + 1) % BOARD_SIZE;
+    if (pos === 0) cashDelta += PASS_START_BONUS;
+  }
+
+  let s = updateActivePlayer(state, (pl) => ({
+    ...pl,
+    position: pos,
+    cash: pl.cash + cashDelta,
+  }));
+  s = appendLog(
+    s,
+    `${p.name} avança ${CONSOLATION_MOVE_STEPS} casa de consolação.`,
+  );
+  if (cashDelta > 0) {
+    s = appendLog(s, `${p.name} passou pelo Início e recebeu R$${cashDelta}.`);
+  }
+
+  const tile = TILE_INDEX[pos]!;
+  if (tile.role === 'corner' && tile.corner === 'go-to-prison') {
+    s = sendActiveToPrison(s, 'detido durante o trajeto');
+  }
+
   return {
     ...s,
-    currentQuiz: null,
     turnPhase: 'awaiting-end-turn',
     lastRoll: null,
     pendingLandingResolved: true,
-    modal: null,
   };
 }
 

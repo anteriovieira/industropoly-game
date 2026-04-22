@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGameStore } from '@/state/gameStore';
 import { useUiStore } from '@/state/uiStore';
 import { Parchment } from './Parchment';
+import { InvestorBadge } from './InvestorBadge';
 import { Minimap } from './Minimap';
 import { Modal } from './modals/Modal';
 import { HudMenu } from './HudMenu';
@@ -49,7 +50,8 @@ function saveShakePref(enabled: boolean): void {
 }
 
 function defaultCardPos(index: number): DraggablePos {
-  return { x: 16 + index * (CARD_DEFAULT_WIDTH + CARD_DEFAULT_GAP), y: 16 };
+  // Player cards start below the top-left menu button so they don't overlap.
+  return { x: 16 + index * (CARD_DEFAULT_WIDTH + CARD_DEFAULT_GAP), y: 76 };
 }
 
 function defaultMinimapPos(): DraggablePos {
@@ -218,6 +220,31 @@ export function Hud() {
 
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
+      {/* Menu hamburger pinned to top-left, above the player cards. */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 16,
+          left: 16,
+          pointerEvents: 'auto',
+          zIndex: 5,
+        }}
+      >
+        <HudMenu
+          shakeSupported={shakeSupported}
+          shakeEnabled={shakeEnabled}
+          onOpenJournal={() => setJournalOpen(true)}
+          onOpenStory={() => setStoryOpen(true)}
+          onOpenAcquisitions={() => setAcquisitionsOpen(true)}
+          onOpenHistory={() => setHistoryOpen(true)}
+          onResetCamera={() => resetCamera()}
+          onToggleShake={() => {
+            void toggleShake();
+          }}
+          onRequestQuit={() => setConfirmingQuit(true)}
+        />
+      </div>
+
       {state.players.map((p, i) => (
         <PlayerCard
           key={p.id}
@@ -393,19 +420,6 @@ export function Hud() {
         >
           <span aria-hidden="true" style={{ marginRight: 6 }}>📜</span>Info (I)
         </button>
-        <HudMenu
-          shakeSupported={shakeSupported}
-          shakeEnabled={shakeEnabled}
-          onOpenJournal={() => setJournalOpen(true)}
-          onOpenStory={() => setStoryOpen(true)}
-          onOpenAcquisitions={() => setAcquisitionsOpen(true)}
-          onOpenHistory={() => setHistoryOpen(true)}
-          onResetCamera={() => resetCamera()}
-          onToggleShake={() => {
-            void toggleShake();
-          }}
-          onRequestQuit={() => setConfirmingQuit(true)}
-        />
       </div>
 
       {/* spacer */}
@@ -510,35 +524,14 @@ function PlayerCard({
             width: '100%',
           }}
         >
-          {/* Brass-ringed token avatar */}
-          <span
-            aria-hidden="true"
-            style={{
-              position: 'relative',
-              flexShrink: 0,
-              width: 38,
-              height: 38,
-              borderRadius: '50%',
-              background:
-                `radial-gradient(circle at 30% 25%, ${color} 0%, ${color} 55%, rgba(0,0,0,0.4) 100%)`,
-              boxShadow:
-                '0 0 0 2px #8a6422, 0 0 0 3px #e8c26a, 0 0 0 4px #8a6422,' +
-                'inset 0 1px 3px rgba(255,255,255,0.35), inset 0 -2px 4px rgba(0,0,0,0.35)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.1rem',
-              lineHeight: 1,
-            }}
-          >
-            <span
-              style={{
-                filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.5))',
-              }}
-            >
-              {tokenGlyph}
-            </span>
-          </span>
+          {/* Brass-ringed token medallion */}
+          <InvestorBadge
+            color={color}
+            label={tokenGlyph}
+            size={42}
+            active={isActive}
+            engrave={false}
+          />
 
           <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
             <span

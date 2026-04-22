@@ -237,17 +237,20 @@ describe('engine quiz flow', () => {
     expect(s.players[s.activePlayerIndex]!.position).toBe((1 + total) % 40);
   });
 
-  it('wrong answer on the pre-move quiz keeps the player parked, clears lastRoll, ends turn', () => {
+  it('wrong answer grants a 1-tile consolation move, clears lastRoll, ends turn', () => {
     let s = mkState();
     s = enterQuizAt(s, 1);
     const cashBefore = s.players[0]!.cash;
     s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
     expect(s.turnPhase).toBe('awaiting-end-turn');
     expect(s.lastRoll).toBeNull();
-    expect(s.players[0]!.position).toBe(1);
+    // Consolation move: player drifts 1 tile forward (1 → 2), with no landing
+    // effect applied (no buy / rent / card draw).
+    expect(s.players[0]!.position).toBe(2);
     expect(s.players[0]!.cash).toBe(cashBefore);
     expect(s.players[0]!.quizStats.wrong).toBe(1);
     expect(s.players[0]!.doublesStreak).toBe(0);
+    expect(s.players[0]!.correctAnswerStreak).toBe(0);
   });
 
   it('correct answer on a parked owned-industry tile lets player move on (rent applies only at the destination)', () => {
@@ -264,7 +267,7 @@ describe('engine quiz flow', () => {
     expect(s.players[1]!.cash).toBe(p2Before);
   });
 
-  it('wrong answer keeps the player parked even on someone else\'s tile (no rent paid)', () => {
+  it('wrong answer on someone else\'s tile does not trigger rent (consolation move skips landing)', () => {
     let s = mkState();
     s = { ...s, tiles: { ...s.tiles, [1]: { owner: 'p2', tier: 0, mortgaged: false } } };
     s = enterQuizAt(s, 1);
@@ -272,11 +275,14 @@ describe('engine quiz flow', () => {
     const p2Before = s.players[1]!.cash;
     s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
     expect(s.turnPhase).toBe('awaiting-end-turn');
+    // Still no rent paid — consolation move advances position but does NOT
+    // resolve the new landing either.
+    expect(s.players[0]!.position).toBe(2);
     expect(s.players[0]!.cash).toBe(p1Before);
     expect(s.players[1]!.cash).toBe(p2Before);
   });
 
-  it('wrong answer on a card-draw tile parked → no card drawn, turn ends', () => {
+  it('wrong answer on a card-draw tile → no card drawn, consolation move, turn ends', () => {
     let s = mkState();
     s = enterQuizAt(s, 7); // invention card tile
     const before = s.decks.invention.draw.length;
@@ -284,6 +290,8 @@ describe('engine quiz flow', () => {
     expect(s.turnPhase).toBe('awaiting-end-turn');
     expect(s.decks.invention.draw.length).toBe(before);
     expect(s.pendingCardId).toBeNull();
+    // Consolation: player drifts forward by 1 tile but never draws a card.
+    expect(s.players[0]!.position).toBe(8);
   });
 
   it('doubles + wrong answer ends turn without granting another roll', () => {

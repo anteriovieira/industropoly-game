@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useGameStore } from '@/state/gameStore';
 import { useUiStore } from '@/state/uiStore';
 import { Parchment } from '@/ui/Parchment';
+import { InvestorBadge } from '@/ui/InvestorBadge';
 import type { TokenKind } from '@/engine/types';
 import { TokenPreview } from '@/scene/tokens/TokenPreview';
 
@@ -218,27 +219,7 @@ function PlayerCard({ index, draft, accent, taken, onUpdate }: PlayerCardProps) 
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span
-          aria-hidden="true"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            background:
-              `radial-gradient(circle at 30% 25%, ${accent} 0%, ${accent} 55%, rgba(0,0,0,0.35) 100%)`,
-            color: '#fff5d6',
-            fontFamily: 'var(--font-display)',
-            fontSize: '1.05rem',
-            boxShadow:
-              '0 0 0 2px #8a6422, 0 0 0 3px #e8c26a,' +
-              'inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 3px rgba(0,0,0,0.35)',
-          }}
-        >
-          {index + 1}
-        </span>
+        <InvestorBadge color={accent} label={index + 1} size={40} />
         <label
           style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}
         >

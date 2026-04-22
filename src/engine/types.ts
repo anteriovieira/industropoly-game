@@ -122,6 +122,7 @@ export interface Player {
   getOutCards: number;
   bankrupt: boolean;
   doublesStreak: number; // consecutive doubles this turn (0..2)
+  correctAnswerStreak: number; // consecutive correct quiz answers; resets on wrong or after bonus award
   quizStats: QuizStats;
 }
 
@@ -268,3 +269,6 @@ export type Action =
 export const PRISON_FEE = 50;
 export const PASS_START_BONUS = 200;
 export const MAX_TIER = 5;
+export const STREAK_BONUS_THRESHOLD = 3;
+export const STREAK_BONUS_AMOUNT = 50;
+export const CONSOLATION_MOVE_STEPS = 1;
