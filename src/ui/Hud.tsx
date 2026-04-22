@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGameStore } from '@/state/gameStore';
 import { useUiStore } from '@/state/uiStore';
 import { Parchment } from './Parchment';
-import { InvestorBadge } from './InvestorBadge';
+import { TokenPreview } from '@/scene/tokens/TokenPreview';
 import { Minimap } from './Minimap';
 import { Modal } from './modals/Modal';
 import { HudMenu } from './HudMenu';
@@ -24,15 +24,6 @@ const HUD_LAYOUT_KEY = 'industropoly:hudLayout';
 const CARD_DEFAULT_WIDTH = 210;
 const CARD_DEFAULT_GAP = 14;
 const MINIMAP_APPROX_SIZE = 140;
-
-const TOKEN_INITIAL: Record<string, string> = {
-  locomotive: '🚂',
-  'top-hat': '🎩',
-  'cotton-bobbin': '🧵',
-  pickaxe: '⛏',
-  'pocket-watch': '⏱',
-  'factory-chimney': '🏭',
-};
 
 function loadShakePref(): boolean {
   try {
@@ -163,9 +154,34 @@ export function Hud() {
     }
   }
 
+  const gameSource = useUiStore((s) => s.gameSource);
+  const mySeatIndex = useUiStore((s) => s.mySeatIndex);
+
+  // Online: auto-advance the turn as soon as the landing resolves so the
+  // next player (on another device) can act immediately — no "end turn"
+  // click needed. Hook lives above the early return for stable hook order.
+  const autoEndFiredForTurnRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!state || gameSource !== 'online') return;
+    if (state.turnPhase !== 'awaiting-end-turn' || !state.pendingLandingResolved) return;
+    if (mySeatIndex == null || state.activePlayerIndex !== mySeatIndex) return;
+    const activeP = state.players[state.activePlayerIndex];
+    if (!activeP) return;
+    const doublesAgain =
+      !!state.lastRoll?.doubles &&
+      !activeP.inPrison &&
+      activeP.doublesStreak > 0 &&
+      activeP.doublesStreak < 3;
+    if (doublesAgain) return;
+    if (autoEndFiredForTurnRef.current === state.turn) return;
+    autoEndFiredForTurnRef.current = state.turn;
+    dispatch({ type: 'END_TURN' });
+  }, [state, gameSource, mySeatIndex, dispatch]);
+
   if (!state) return null;
   const active = activePlayer(state);
   const phase = state.turnPhase;
+  const isOnline = gameSource === 'online';
   const isMyTurn = isMyTurnFn();
   const canRoll = isMyTurn && phase === 'awaiting-roll' && !active.inPrison;
   const canEnd = isMyTurn && phase === 'awaiting-end-turn' && state.pendingLandingResolved;
@@ -198,7 +214,6 @@ export function Hud() {
       // Hot-seat: auto-roll for the next player (same device). Online: the next
       // player is on another device and will roll themselves — also, firing
       // ROLL_DICE here would race the server turn handover.
-      const isOnline = useUiStore.getState().gameSource === 'online';
       if (!isOnline && !nextRoller.inPrison) {
         dispatch({ type: 'ROLL_DICE' });
       }
@@ -210,8 +225,12 @@ export function Hud() {
   const rollLabel = canEnd
     ? samePlayerAgain
       ? `Dupla! Lançar de novo (E)`
-      : `Encerrar turno (E)`
-    : 'Lançar dados (Espaço)';
+      : isOnline
+        ? `Encerrando turno…`
+        : `Jogar → ${nextRoller.name} (E)`
+    : !isMyTurn && isOnline
+      ? `Vez de ${active.name}`
+      : 'Lançar dados (Espaço)';
 
   // Keep refs in sync each render so the shake listener (attached once per
   // enable/disable cycle) always observes current phase state without needing
@@ -454,8 +473,6 @@ function PlayerCard({
     defaultPos,
   });
 
-  const tokenGlyph = TOKEN_INITIAL[player.token] ?? '⚙';
-
   return (
     <div
       ref={ref}
@@ -505,38 +522,52 @@ function PlayerCard({
             width: '100%',
           }}
         >
-          {/* Brass-ringed token medallion */}
-          <InvestorBadge
-            color={color}
-            label={tokenGlyph}
-            size={42}
-            active={isActive}
-            engrave={false}
-          />
-
-          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span
               style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.05rem',
-                lineHeight: 1.1,
-                color: 'var(--ink)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                textShadow: '0 1px 0 rgba(250, 226, 160, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                minWidth: 0,
               }}
             >
-              {player.name}
+              {/* Board token, inline next to the name — same 3D pin the player
+                  sees on the board, no circular frame. */}
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'inline-block',
+                  width: 36,
+                  height: 36,
+                  flexShrink: 0,
+                }}
+              >
+                <TokenPreview kind={player.token} color={color} size={36} />
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.05rem',
+                  lineHeight: 1.1,
+                  color: 'var(--ink)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  textShadow: '0 1px 0 rgba(250, 226, 160, 0.4)',
+                }}
+              >
+                {player.name}
+              </span>
             </span>
             <span
               className="ind-tabular"
               style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.15rem',
-                lineHeight: 1.1,
+                fontFamily: 'var(--font-body)',
+                fontWeight: 600,
+                fontSize: '1.1rem',
+                lineHeight: 1.15,
                 color: 'var(--copper)',
-                textShadow: '0 1px 0 rgba(250, 226, 160, 0.4)',
+                letterSpacing: '0.01em',
               }}
             >
               R${player.cash}
