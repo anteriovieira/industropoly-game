@@ -106,6 +106,11 @@ export function Hud() {
   }
 
   function quitGame(): void {
+    const online = useUiStore.getState();
+    if (online.gameSource === 'online' && online.quitOnlineHandler) {
+      void online.quitOnlineHandler();
+      return;
+    }
     clearSave();
     setPhase('intro');
     clearStore();

@@ -35,6 +35,11 @@ interface UiStore {
   focusCameraOnTile: (tileId: number) => void;
   diceDragging: boolean;
   setDiceDragging: (dragging: boolean) => void;
+  // Registered by OnlineGameContainer while mounted. Hud's quitGame calls this
+  // in online mode so the container can close the room server-side, notify
+  // guests via broadcast, and clean up local state.
+  quitOnlineHandler: (() => Promise<void>) | null;
+  setQuitOnlineHandler: (fn: (() => Promise<void>) | null) => void;
 }
 
 export const useUiStore = create<UiStore>((set) => ({
@@ -72,4 +77,6 @@ export const useUiStore = create<UiStore>((set) => ({
     set((s) => ({ cameraFocusTileId: tileId, cameraFocusNonce: s.cameraFocusNonce + 1 })),
   diceDragging: false,
   setDiceDragging: (diceDragging) => set({ diceDragging }),
+  quitOnlineHandler: null,
+  setQuitOnlineHandler: (quitOnlineHandler) => set({ quitOnlineHandler }),
 }));

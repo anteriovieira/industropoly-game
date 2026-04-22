@@ -3,8 +3,15 @@ import { useUiStore } from '@/state/uiStore';
 import { ensureAnonymousUser } from '@/realtime/supabaseClient';
 import { createOnlineGameStore } from '@/realtime/onlineGameStore';
 import { useRoomChannel } from '@/realtime/useRoomChannel';
-import { fetchActions, listMembers, appendAction } from '@/realtime/roomsApi';
+import {
+  fetchActions,
+  listMembers,
+  appendAction,
+  abandonRoom,
+  leaveRoom,
+} from '@/realtime/roomsApi';
 import { useGameStore } from '@/state/gameStore';
+import { clear as clearSave } from '@/lib/persist';
 import { GameScreen } from '../GameScreen';
 import { EmoteTray } from '@/ui/hud/EmoteTray';
 import { ConnectionBanner } from '@/ui/hud/ConnectionBanner';
@@ -16,6 +23,11 @@ const TOKENS: TokenKind[] = ['locomotive', 'top-hat', 'cotton-bobbin', 'pickaxe'
 
 export function OnlineGameContainer() {
   const roomId = useUiStore((s) => s.activeRoomId)!;
+  const setPhase = useUiStore((s) => s.setPhase);
+  const setNotice = useUiStore((s) => s.setNotice);
+  const setActiveRoomId = useUiStore((s) => s.setActiveRoomId);
+  const setGameSource = useUiStore((s) => s.setGameSource);
+  const setQuitOnlineHandler = useUiStore((s) => s.setQuitOnlineHandler);
   const [userId, setUserId] = useState<string | null>(null);
   const [members, setMembers] = useState<RoomMemberRow[]>([]);
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -26,6 +38,7 @@ export function OnlineGameContainer() {
   );
 
   const loadGameState = useGameStore((s) => s.loadState);
+  const clearGameStore = useGameStore((s) => s.clear);
 
   useEffect(() => {
     ensureAnonymousUser().then(setUserId);
@@ -78,16 +91,39 @@ export function OnlineGameContainer() {
   const [incoming, setIncoming] = useState<{ userId: string; emoji: string; key: number } | null>(null);
   const broadcastRef = useRef<((ev: BroadcastEvent) => void) | null>(null);
 
-  const channelCbsRef = useRef({
-    onAction: (row: GameActionRow) => {
-      onlineStore.getState().applyRemoteAction({ seq: row.seq, action: row.action as Action });
-      const state = onlineStore.getState().state;
-      if (state) loadGameState(state);
-    },
-    onBroadcast: (ev: BroadcastEvent) => {
-      if (ev.type === 'emote') setIncoming({ userId: ev.userId, emoji: ev.emoji, key: Date.now() });
-    },
-  });
+  // Teardown: drop local game state and room identity, return to intro. Shared
+  // by both the host-initiated quit and the guest-side reaction to room:closed.
+  const exitRoom = useRef<(notice?: string) => Promise<void>>(async () => {});
+  exitRoom.current = async (notice) => {
+    try {
+      if (userId) await leaveRoom(roomId, userId);
+    } catch (e) {
+      console.warn('leaveRoom failed', e);
+    }
+    clearSave();
+    clearGameStore();
+    setActiveRoomId(null);
+    setGameSource('local');
+    if (notice) setNotice(notice);
+    setPhase('intro');
+  };
+
+  // Refs reassigned each render so callbacks see the current userId closure.
+  const channelCbsRef = useRef<{
+    onAction: (row: GameActionRow) => void;
+    onBroadcast: (ev: BroadcastEvent) => void;
+  }>({ onAction: () => {}, onBroadcast: () => {} });
+  channelCbsRef.current.onAction = (row) => {
+    onlineStore.getState().applyRemoteAction({ seq: row.seq, action: row.action as Action });
+    const state = onlineStore.getState().state;
+    if (state) loadGameState(state);
+  };
+  channelCbsRef.current.onBroadcast = (ev) => {
+    if (ev.type === 'emote') setIncoming({ userId: ev.userId, emoji: ev.emoji, key: Date.now() });
+    if (ev.type === 'room:closed' && ev.userId !== userId) {
+      void exitRoom.current('O host encerrou a partida.');
+    }
+  };
 
   const channel = useRoomChannel({
     roomId,
@@ -97,6 +133,27 @@ export function OnlineGameContainer() {
     onBroadcast: (ev) => channelCbsRef.current.onBroadcast(ev),
   });
   broadcastRef.current = channel.sendBroadcast;
+
+  // Expose online-specific quit to the Hud. Host: notify guests, mark room
+  // abandoned server-side (cron handles physical delete), leave, and exit.
+  // Non-host: just leave and exit.
+  useEffect(() => {
+    if (!userId) return;
+    setQuitOnlineHandler(async () => {
+      const host = members.find((m) => m.role === 'player' && m.seat_index === 0);
+      const iAmHost = host?.user_id === userId;
+      if (iAmHost) {
+        broadcastRef.current?.({ type: 'room:closed', userId });
+        try {
+          await abandonRoom(roomId);
+        } catch (e) {
+          console.warn('abandonRoom failed', e);
+        }
+      }
+      await exitRoom.current();
+    });
+    return () => setQuitOnlineHandler(null);
+  }, [userId, members, roomId, setQuitOnlineHandler]);
 
   useEffect(() => {
     if (!roomId || members.length === 0) return;

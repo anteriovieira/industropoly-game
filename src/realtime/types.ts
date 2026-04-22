@@ -49,4 +49,5 @@ export interface PresenceState {
 export type BroadcastEvent =
   | { type: 'dice:rolling'; userId: string }
   | { type: 'quiz:thinking'; userId: string; secondsLeft: number }
-  | { type: 'emote'; userId: string; emoji: string };
+  | { type: 'emote'; userId: string; emoji: string }
+  | { type: 'room:closed'; userId: string };

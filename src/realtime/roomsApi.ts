@@ -110,3 +110,17 @@ export async function setCurrentPlayer(roomId: string, userId: string): Promise<
     .eq('id', roomId);
   if (error) throw error;
 }
+
+/**
+ * Host-only: mark the room as abandoned. Physical deletion is handled by the
+ * nightly cleanup cron; "abandoned" is what guests observe to know the game is
+ * over. Guarded by the rooms_update_host RLS policy.
+ */
+export async function abandonRoom(roomId: string): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await getSupabase()
+    .from('rooms')
+    .update({ status: 'abandoned', finished_at: now, last_activity_at: now })
+    .eq('id', roomId);
+  if (error) throw error;
+}

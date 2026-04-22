@@ -16,6 +16,7 @@ export function RoomLobbyScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [consolationMoveOnWrong, setConsolationMoveOnWrong] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -51,6 +52,21 @@ export function RoomLobbyScreen() {
     .filter((m) => m.role === 'player')
     .sort((a, b) => (a.seat_index ?? 0) - (b.seat_index ?? 0));
   const isHost = me && players[0]?.user_id === me.user_id;
+
+  const shareUrl = room
+    ? `${window.location.origin}${window.location.pathname}?room=${room.code}`
+    : '';
+
+  async function handleCopy() {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Fallback: selected text; user can Ctrl+C.
+    }
+  }
 
   async function handleStart() {
     if (!roomId || !userId) return;
@@ -94,9 +110,33 @@ export function RoomLobbyScreen() {
       <Header title="Sala de espera" subtitle={room ? `Código ${room.code}` : 'Carregando…'} />
 
       <p style={{ textAlign: 'center' }}>
-        Compartilhe o código com os outros jogadores. A partida começa quando o host clicar em
-        iniciar.
+        {isHost
+          ? 'Compartilhe o link com os outros jogadores. A partida começa quando você clicar em iniciar.'
+          : 'Aguardando o host iniciar a partida.'}
       </p>
+
+      {isHost && room && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+            marginBottom: 20,
+            flexWrap: 'wrap',
+          }}
+        >
+          <input
+            readOnly
+            value={shareUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            style={{ flex: 1, minWidth: 240, padding: '10px 12px', fontSize: '0.95rem' }}
+            aria-label="Link de convite"
+          />
+          <button className="primary" onClick={handleCopy}>
+            {copied ? 'Copiado!' : 'Copiar link'}
+          </button>
+        </div>
+      )}
 
       <h2 style={{ marginBottom: 8 }}>Jogadores ({players.length}/4)</h2>
       <ul style={{ marginTop: 0, paddingLeft: 20 }}>
