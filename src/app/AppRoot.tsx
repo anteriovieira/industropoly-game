@@ -7,6 +7,7 @@ import { GameScreen } from './GameScreen';
 import { SummaryScreen } from './SummaryScreen';
 import { OnlineLobbyScreen } from './online/OnlineLobbyScreen';
 import { RoomLobbyScreen } from './online/RoomLobbyScreen';
+import { OnlineGameContainer } from './online/OnlineGameContainer';
 import { ResumeDialog } from './ResumeDialog';
 import { UpdatePill } from '@/components/UpdatePill';
 import { load } from '@/lib/persist';
@@ -36,7 +37,11 @@ export function AppRoot() {
       {phase === 'online-lobby' && <OnlineLobbyScreen />}
       {phase === 'online-room' && <RoomLobbyScreen />}
       {phase === 'setup' && <SetupScreen />}
-      {phase === 'game' && <GameScreen />}
+      {phase === 'game' && useUiStore.getState().gameSource === 'online' ? (
+        <OnlineGameContainer />
+      ) : phase === 'game' ? (
+        <GameScreen />
+      ) : null}
       {phase === 'summary' && <SummaryScreen />}
       {notice && (
         <div
