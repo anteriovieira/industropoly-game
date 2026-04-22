@@ -239,14 +239,15 @@ describe('engine quiz flow', () => {
 
   it('wrong answer grants a 1-tile consolation move, clears lastRoll, ends turn', () => {
     let s = mkState();
-    s = enterQuizAt(s, 1);
+    // Park on tile 19 so the consolation move lands on tile 20 (Praça Pública,
+    // a corner with no landing effect) — keeps the assertion about ending the
+    // turn clean.
+    s = enterQuizAt(s, 19);
     const cashBefore = s.players[0]!.cash;
     s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
     expect(s.turnPhase).toBe('awaiting-end-turn');
     expect(s.lastRoll).toBeNull();
-    // Consolation move: player drifts 1 tile forward (1 → 2), with no landing
-    // effect applied (no buy / rent / card draw).
-    expect(s.players[0]!.position).toBe(2);
+    expect(s.players[0]!.position).toBe(20);
     expect(s.players[0]!.cash).toBe(cashBefore);
     expect(s.players[0]!.quizStats.wrong).toBe(1);
     expect(s.players[0]!.doublesStreak).toBe(0);
@@ -267,40 +268,69 @@ describe('engine quiz flow', () => {
     expect(s.players[1]!.cash).toBe(p2Before);
   });
 
-  it('wrong answer on someone else\'s tile does not trigger rent (consolation move skips landing)', () => {
+  it('consolation landing on an unowned industry does NOT trigger the buy offer', () => {
     let s = mkState();
-    s = { ...s, tiles: { ...s.tiles, [1]: { owner: 'p2', tier: 0, mortgaged: false } } };
-    s = enterQuizAt(s, 1);
-    const p1Before = s.players[0]!.cash;
-    const p2Before = s.players[1]!.cash;
+    // Tile 7 is a card tile; the consolation move lands on tile 8 (Soho de
+    // Boulton — an unowned industry). The buy offer must be suppressed so a
+    // wrong answer cannot become a shopping opportunity.
+    s = enterQuizAt(s, 7);
+    const cashBefore = s.players[0]!.cash;
     s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
+    expect(s.players[0]!.position).toBe(8);
     expect(s.turnPhase).toBe('awaiting-end-turn');
-    // Still no rent paid — consolation move advances position but does NOT
-    // resolve the new landing either.
-    expect(s.players[0]!.position).toBe(2);
-    expect(s.players[0]!.cash).toBe(p1Before);
-    expect(s.players[1]!.cash).toBe(p2Before);
+    expect(s.modal).toBeNull();
+    expect(s.tiles[8]!.owner).toBeNull();
+    expect(s.players[0]!.cash).toBe(cashBefore);
   });
 
-  it('wrong answer on a card-draw tile → no card drawn, consolation move, turn ends', () => {
+  it('consolation landing on an owned industry charges the rent', () => {
+    let s = mkState();
+    // Tile 8 is an industry. Give it to p2, then park p1 on tile 7 (card) so
+    // the consolation move drifts p1 onto tile 8 — rent must still apply.
+    s = { ...s, tiles: { ...s.tiles, [8]: { owner: 'p2', tier: 0, mortgaged: false } } };
+    s = enterQuizAt(s, 7);
+    s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
+    expect(s.players[0]!.position).toBe(8);
+    // The rent modal is surfaced — the pipeline hands off to the standard
+    // landing flow, which asks the player to acknowledge the rent charge.
+    expect(s.modal?.kind).toBe('rent');
+  });
+
+  it('wrong answer parked on a card tile does NOT draw that tile\'s card (quiz gate held)', () => {
     let s = mkState();
     s = enterQuizAt(s, 7); // invention card tile
     const before = s.decks.invention.draw.length;
     s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
-    expect(s.turnPhase).toBe('awaiting-end-turn');
+    // Card from tile 7 was NOT drawn — the quiz gate blocked it. The player
+    // drifts to tile 8 (industry, unowned) and the turn ends without a card.
     expect(s.decks.invention.draw.length).toBe(before);
     expect(s.pendingCardId).toBeNull();
-    // Consolation: player drifts forward by 1 tile but never draws a card.
     expect(s.players[0]!.position).toBe(8);
+    expect(s.turnPhase).toBe('awaiting-end-turn');
+  });
+
+  it('consolation landing on a card tile draws a card (quiz was on the origin tile)', () => {
+    let s = mkState();
+    // Park on tile 6 (industry) so the consolation move lands on tile 7
+    // (invention card). The origin quiz was Cartwright's, not the card tile's
+    // — so landing on tile 7 correctly draws from the invention deck.
+    s = enterQuizAt(s, 6);
+    const before = s.decks.invention.draw.length;
+    s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
+    expect(s.players[0]!.position).toBe(7);
+    expect(s.turnPhase).toBe('drawing-card');
+    expect(s.modal?.kind).toBe('card');
+    expect(s.pendingCardId).not.toBeNull();
+    expect(s.decks.invention.draw.length).toBe(before - 1);
   });
 
   it('doubles + wrong answer ends turn without granting another roll', () => {
     let s = mkState();
-    // Force the player to start on tile 1 with doublesStreak=1 and rig the rng so
-    // ROLL_DICE produces doubles. Easier: bypass ROLL_DICE — set state manually
-    // as if the roll just happened with doubles, then enter the quiz.
-    s = enterQuizAt(s, 1);
-    // Simulate doubles by tweaking lastRoll + doublesStreak after the quiz opened.
+    // Park on tile 19 so the consolation lands on tile 20 (Praça Pública, a
+    // corner with no landing effect). We can then assert turnPhase cleanly
+    // transitioned to `awaiting-end-turn` and the doubles streak did not grant
+    // the player another roll.
+    s = enterQuizAt(s, 19);
     s = {
       ...s,
       lastRoll: { a: 3, b: 3, total: 6, doubles: true },

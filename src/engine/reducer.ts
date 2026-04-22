@@ -480,17 +480,19 @@ function handleAnswerQuestion(state: GameState, optionId: string): GameState {
 
   // Wrong answer: reset doublesStreak and apply a consolation move —
   // the player advances CONSOLATION_MOVE_STEPS tile(s) forward (banking the
-  // pass-start bonus if they cross Manchester), but NO landing effect fires:
-  // no purchase, no rent, no card draw. On the next turn they'll face the
-  // quiz of whatever tile they drifted to.
+  // pass-start bonus if they cross Manchester) and then resolves the landing
+  // so cards, taxes and rents still fire. The one exception is an unowned
+  // industry/transport/utility: we skip its buy offer (otherwise missing a
+  // quiz would turn into a purchase opportunity).
   s = updateActivePlayer(s, (pl) => ({ ...pl, doublesStreak: 0 }));
   return applyConsolationMove({ ...s, currentQuiz: null, modal: null });
 }
 
-// Moves the active player CONSOLATION_MOVE_STEPS forward with pass-start
-// bonus. Go-to-prison mid-step still sends the player to jail (thematically
-// consistent with the normal movement rule). All other tiles are entered
-// "parked" — no landing resolution runs.
+// Moves the active player CONSOLATION_MOVE_STEPS forward (with pass-start
+// bonus), then resolves the landing via the normal handler. The only skipped
+// effect is the buy offer for an unowned purchasable tile — a wrong answer
+// must not become a shopping opportunity. Cards, taxes, rents and the
+// go-to-prison corner all fire as usual.
 function applyConsolationMove(state: GameState): GameState {
   const p = selActive(state);
   let pos = p.position;
@@ -516,14 +518,41 @@ function applyConsolationMove(state: GameState): GameState {
   const tile = TILE_INDEX[pos]!;
   if (tile.role === 'corner' && tile.corner === 'go-to-prison') {
     s = sendActiveToPrison(s, 'detido durante o trajeto');
+    return {
+      ...s,
+      turnPhase: 'awaiting-end-turn',
+      lastRoll: null,
+      pendingLandingResolved: true,
+    };
   }
 
-  return {
+  // Hand off to the normal landing pipeline so cards/taxes/rents fire. Clear
+  // lastRoll first — a wrong answer must not leave dice numbers around (rent
+  // on utility tiles multiplies them).
+  s = {
     ...s,
-    turnPhase: 'awaiting-end-turn',
+    turnPhase: 'awaiting-land-action',
+    pendingLandingResolved: false,
     lastRoll: null,
-    pendingLandingResolved: true,
   };
+  const landed = handleResolveLanding(s);
+
+  // Suppress the buy offer for unowned purchasable tiles — otherwise a wrong
+  // answer would become a shopping opportunity. The landing is treated as
+  // declined: the modal is dismissed and the turn ends.
+  if (
+    landed.modal?.kind === 'tile-info' &&
+    landed.turnPhase === 'awaiting-land-action' &&
+    !landed.pendingLandingResolved
+  ) {
+    return {
+      ...landed,
+      modal: null,
+      pendingLandingResolved: true,
+      turnPhase: 'awaiting-end-turn',
+    };
+  }
+  return landed;
 }
 
 function handleBuyHint(state: GameState, hintId: string): GameState {
