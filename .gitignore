@@ -10,3 +10,6 @@ coverage
 .env.*.local
 playwright-report
 test-results
+.env.local
+supabase/.branches
+supabase/.temp
