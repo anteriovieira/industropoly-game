@@ -164,7 +164,6 @@ export function Hud() {
   const isMyTurn = isMyTurnFn();
   const canRoll = isMyTurn && phase === 'awaiting-roll' && !active.inPrison;
   const canEnd = isMyTurn && phase === 'awaiting-end-turn' && state.pendingLandingResolved;
-  const canInfo = (phase === 'awaiting-roll' || phase === 'awaiting-end-turn') && !state.modal;
 
   // Who rolls next after the current turn ends. Respects the doubles rule:
   // on an unbroken doubles streak (not in prison, streak < 3), the same
@@ -395,17 +394,6 @@ export function Hud() {
         >
           <span aria-hidden="true" style={{ marginRight: 8, fontSize: '1.1em' }}>🎲</span>
           {rollLabel}
-        </button>
-        <button
-          disabled={!canInfo}
-          onClick={() => {
-            audio.play('click');
-            dispatch({ type: 'OPEN_TILE_INFO', tileId: active.position });
-          }}
-          aria-label="Ver casa atual (I)"
-          title="Ver casa atual (I)"
-        >
-          <span aria-hidden="true" style={{ marginRight: 6 }}>📜</span>Info (I)
         </button>
       </div>
 

@@ -417,7 +417,10 @@ function handleBuyTile(state: GameState): GameState {
 
 function handleDeclineBuy(state: GameState): GameState {
   if (state.turnPhase !== 'awaiting-land-action') return state;
-  return { ...state, modal: null, pendingLandingResolved: true, turnPhase: 'awaiting-end-turn' };
+  const p = selActive(state);
+  const t = TILE_INDEX[p.position]!;
+  const s = appendLog(state, `${p.name} recusou comprar ${t.name}.`);
+  return { ...s, modal: null, pendingLandingResolved: true, turnPhase: 'awaiting-end-turn' };
 }
 
 // Quiz actions ------------------------------------------------------------
