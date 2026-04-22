@@ -27,8 +27,7 @@ export function GameToaster() {
     <Toaster
       position="top-right"
       duration={30000}
-      visibleToasts={9}
-      expand
+      visibleToasts={4}
       closeButton
       gap={8}
       icons={{ success: null, info: null, warning: null, error: null, loading: null }}
