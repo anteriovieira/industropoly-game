@@ -392,6 +392,59 @@ describe('engine quiz flow', () => {
     expect(res.notice).toMatch(/atualizado|incompat|novo/i);
   });
 
+  it('three consecutive correct answers award the streak bonus and reset the streak', () => {
+    let s = mkState();
+    const startCash = s.players[0]!.cash;
+
+    // First correct answer → streak=1, no bonus yet.
+    s = enterQuizAt(s, 1);
+    s = reducer(s, { type: 'ANSWER_QUESTION', optionId: correctOptionFor(s) });
+    expect(s.players[0]!.correctAnswerStreak).toBe(1);
+    expect(s.players[0]!.cash).toBe(startCash);
+
+    // Second correct answer → streak=2.
+    s = enterQuizAt(s, 3);
+    s = reducer(s, { type: 'ANSWER_QUESTION', optionId: correctOptionFor(s) });
+    expect(s.players[0]!.correctAnswerStreak).toBe(2);
+    expect(s.players[0]!.cash).toBe(startCash);
+
+    // Third correct answer → bonus of R$50, streak resets to 0.
+    s = enterQuizAt(s, 5);
+    s = reducer(s, { type: 'ANSWER_QUESTION', optionId: correctOptionFor(s) });
+    expect(s.players[0]!.correctAnswerStreak).toBe(0);
+    expect(s.players[0]!.cash).toBe(startCash + 50);
+  });
+
+  it('a wrong answer resets the correct-answer streak', () => {
+    let s = mkState();
+    s = enterQuizAt(s, 1);
+    s = reducer(s, { type: 'ANSWER_QUESTION', optionId: correctOptionFor(s) });
+    expect(s.players[0]!.correctAnswerStreak).toBe(1);
+
+    s = enterQuizAt(s, 3);
+    s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
+    expect(s.players[0]!.correctAnswerStreak).toBe(0);
+  });
+
+  it('consolation move past the start tile awards the pass-start bonus', () => {
+    let s = mkState();
+    // Park on tile 39 (the last tile before Manchester/Start at tile 0).
+    s = enterQuizAt(s, 39);
+    const cashBefore = s.players[0]!.cash;
+    s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
+    expect(s.players[0]!.position).toBe(0);
+    expect(s.players[0]!.cash).toBe(cashBefore + 200);
+  });
+
+  it('consolation move landing on go-to-prison still sends the player to jail', () => {
+    let s = mkState();
+    // Tile 29 → consolation move puts player on tile 30 (go-to-prison corner).
+    s = enterQuizAt(s, 29);
+    s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
+    expect(s.players[0]!.inPrison).toBe(true);
+    expect(s.players[0]!.position).toBe(10);
+  });
+
   it('RESOLVE_MOVEMENT no longer consumes RNG (question selection moved to ROLL_DICE)', () => {
     // Park on a corner so ROLL_DICE goes straight to moving (no quiz).
     let s = mkState();
