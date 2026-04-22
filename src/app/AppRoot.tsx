@@ -6,6 +6,7 @@ import { SetupScreen } from './SetupScreen';
 import { GameScreen } from './GameScreen';
 import { SummaryScreen } from './SummaryScreen';
 import { OnlineLobbyScreen } from './online/OnlineLobbyScreen';
+import { RoomLobbyScreen } from './online/RoomLobbyScreen';
 import { ResumeDialog } from './ResumeDialog';
 import { UpdatePill } from '@/components/UpdatePill';
 import { load } from '@/lib/persist';
@@ -33,6 +34,7 @@ export function AppRoot() {
       {phase === 'boot' && <ResumeDialog />}
       {phase === 'intro' && <IntroScreen />}
       {phase === 'online-lobby' && <OnlineLobbyScreen />}
+      {phase === 'online-room' && <RoomLobbyScreen />}
       {phase === 'setup' && <SetupScreen />}
       {phase === 'game' && <GameScreen />}
       {phase === 'summary' && <SummaryScreen />}
