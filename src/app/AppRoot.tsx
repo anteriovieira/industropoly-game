@@ -43,21 +43,23 @@ export function AppRoot() {
       }
       if (cancelled) return;
 
-      // 2. Fall back to local hot-seat save.
+      // 2. ?room=CODE share link wins over local hot-seat save so followers always
+      //    reach the join step, even if this browser has an old local save.
+      const urlCode = new URL(window.location.href).searchParams.get('room');
+      if (urlCode) {
+        setGameSource('online');
+        setPhase('online-lobby');
+        return;
+      }
+
+      // 3. Fall back to local hot-seat save, then intro.
       const { state, notice: n } = load();
       if (n) setNotice(n);
       if (state) {
         loadState(state);
         setPhase('boot'); // prompt resume
       } else {
-        // 3. If the URL carries ?room=CODE, drop into the online lobby preloaded.
-        const urlCode = new URL(window.location.href).searchParams.get('room');
-        if (urlCode) {
-          setGameSource('online');
-          setPhase('online-lobby');
-        } else {
-          setPhase('intro');
-        }
+        setPhase('intro');
       }
     })();
     return () => { cancelled = true; };
