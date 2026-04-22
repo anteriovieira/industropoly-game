@@ -25,6 +25,39 @@ npm run test:e2e     # run Playwright smoke test against preview
 npm run lint:content # validate tile + card educational content
 ```
 
+## Online multiplayer (optional)
+
+The hot-seat mode runs as a static SPA with no backend. The online mode adds a hosted Supabase project for rooms, realtime sync, and anonymous auth.
+
+To enable it locally:
+
+```bash
+cp .env.example .env.local
+# Fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY from your Supabase project
+npm run dev
+```
+
+Then open the app, click "Jogar online", and create a room. Open another browser window and join with the displayed code.
+
+### Migrations
+
+Schema lives under `supabase/migrations/`. To apply them to your linked project:
+
+```bash
+supabase link --project-ref <your-project-ref>   # one-time
+supabase db push                                  # each new migration
+```
+
+For full setup notes (cloud project provisioning, env vars, cron), see [`scripts/supabase-init.md`](scripts/supabase-init.md).
+
+### Online E2E
+
+`tests/e2e/online-multiplayer.spec.ts` is a two-browser smoke test that hits the configured Supabase project. It is skipped by default (creates real rows). Run explicitly with:
+
+```bash
+RUN_SUPABASE_E2E=1 npx playwright test online-multiplayer
+```
+
 ## Repository layout
 
 ```
