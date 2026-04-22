@@ -7,6 +7,7 @@ import { fetchActions, listMembers, appendAction } from '@/realtime/roomsApi';
 import { useGameStore } from '@/state/gameStore';
 import { GameScreen } from '../GameScreen';
 import { EmoteTray } from '@/ui/hud/EmoteTray';
+import { ConnectionBanner } from '@/ui/hud/ConnectionBanner';
 import type { GameActionRow, RoomMemberRow, BroadcastEvent } from '@/realtime/types';
 import type { Action, TokenKind } from '@/engine/types';
 
@@ -107,9 +108,26 @@ export function OnlineGameContainer() {
     };
   }, [members, onlineStore, roomId]);
 
+  const wasConnectedRef = useRef(false);
+  useEffect(() => {
+    if (channel.connected && !wasConnectedRef.current && bootstrapped) {
+      (async () => {
+        const sinceSeq = onlineStore.getState().lastSeq;
+        const rows = await fetchActions(roomId, sinceSeq);
+        for (const r of rows) {
+          onlineStore.getState().applyRemoteAction({ seq: r.seq, action: r.action });
+        }
+        const state = onlineStore.getState().state;
+        if (state) loadGameState(state);
+      })();
+    }
+    wasConnectedRef.current = channel.connected;
+  }, [channel.connected, bootstrapped, onlineStore, roomId, loadGameState]);
+
   if (!bootstrapped) return <div style={{ padding: 24 }}>Carregando partida…</div>;
   return (
     <>
+      <ConnectionBanner connected={channel.connected} />
       <GameScreen />
       <EmoteTray
         send={(ev) => broadcastRef.current?.({ ...ev, userId: userId ?? '' })}
