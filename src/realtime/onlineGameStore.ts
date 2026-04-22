@@ -8,6 +8,19 @@ import { ActionLog, type LoggedAction } from './actionLog';
 // are rejected by the "not your turn" check and we don't want a toast for each).
 const IGNORED_ERROR_PATTERNS = ['not your turn', 'not a member', 'room is not in_game'];
 
+function extractErrorMessage(err: unknown): string {
+  if (err && typeof err === 'object') {
+    // PostgrestError shape: { message, code, details, hint }
+    const e = err as { message?: string; hint?: string; details?: string; code?: string };
+    if (e.message) return e.hint ? `${e.message} (${e.hint})` : e.message;
+    if (e.details) return e.details;
+    if (e.code) return `erro ${e.code}`;
+  }
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  return 'Ação rejeitada pelo servidor';
+}
+
 export interface OnlineGameStore {
   state: GameState | null;
   lastSeq: number;
@@ -36,10 +49,9 @@ export function createOnlineGameStore(deps: OnlineGameStoreDeps): StoreApi<Onlin
     dispatch(action) {
       void deps.append(action).catch((err) => {
         console.error('append_action failed', action, err);
-        const message =
-          err instanceof Error ? err.message : typeof err === 'string' ? err : 'Ação rejeitada pelo servidor';
+        const message = extractErrorMessage(err);
         if (IGNORED_ERROR_PATTERNS.some((p) => message.toLowerCase().includes(p))) return;
-        toast.error(message);
+        toast.error(`${action.type}: ${message}`);
       });
     },
 
