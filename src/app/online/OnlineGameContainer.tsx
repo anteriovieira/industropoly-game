@@ -98,21 +98,29 @@ export function OnlineGameContainer() {
     gameStoreApi.setState({
       dispatch: (action: Action) => {
         onlineStore.getState().dispatch(action);
-        if (action.type === 'END_TURN') {
-          const state = onlineStore.getState().state;
-          if (!state) return;
-          const players = members.filter((m) => m.role === 'player').sort((a, b) => (a.seat_index ?? 0) - (b.seat_index ?? 0));
-          if (players.length === 0) return;
-          const nextSeat = (state.activePlayerIndex + 1) % players.length;
-          const nextUserId = players[nextSeat]!.user_id;
-          import('@/realtime/roomsApi').then((mod) => mod.setCurrentPlayer(roomId, nextUserId).catch(console.error));
-        }
       },
     });
     return () => {
       gameStoreApi.setState({ dispatch: original });
     };
   }, [members, onlineStore, roomId]);
+
+  // Keep rooms.current_player_user_id in sync with the reducer's activePlayerIndex.
+  // Runs AFTER every echoed action has been applied, so there is no race with the
+  // append_action RPC's turn check (the current_player at dispatch time is always
+  // the caller). Correctly handles doubles (active stays the same — no-op update)
+  // and bankruptcies (reducer skips bankrupt players).
+  const activeIndex = useGameStore((s) => s.state?.activePlayerIndex);
+  useEffect(() => {
+    if (activeIndex == null || !userId || members.length === 0 || !roomId) return;
+    const activeMember = members.find(
+      (m) => m.role === 'player' && m.seat_index === activeIndex,
+    );
+    if (!activeMember || activeMember.user_id !== userId) return;
+    import('@/realtime/roomsApi').then((mod) =>
+      mod.setCurrentPlayer(roomId, userId).catch(console.error),
+    );
+  }, [activeIndex, userId, members, roomId]);
 
   const wasConnectedRef = useRef(false);
   useEffect(() => {

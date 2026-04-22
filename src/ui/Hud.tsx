@@ -190,10 +190,11 @@ export function Hud() {
   function handleRoll(): void {
     if (canEnd) {
       dispatch({ type: 'END_TURN' });
-      // After END_TURN the next roller is the active player. Auto-roll for
-      // them unless they're in prison — in that case the reducer would
-      // reject ROLL_DICE and the prison-decision UI takes over.
-      if (!nextRoller.inPrison) {
+      // Hot-seat: auto-roll for the next player (same device). Online: the next
+      // player is on another device and will roll themselves — also, firing
+      // ROLL_DICE here would race the server turn handover.
+      const isOnline = useUiStore.getState().gameSource === 'online';
+      if (!isOnline && !nextRoller.inPrison) {
         dispatch({ type: 'ROLL_DICE' });
       }
     } else if (canRoll) {
