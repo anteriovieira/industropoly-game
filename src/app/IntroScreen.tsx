@@ -92,7 +92,7 @@ export function IntroScreen() {
                 setPhase('setup');
               }}
             >
-              Hot-seat (mesma tela)
+              Jogar Junto (mesma tela)
             </button>
             <button
               className="primary hero"
@@ -102,7 +102,7 @@ export function IntroScreen() {
               }}
               autoFocus
             >
-              Jogar online &rarr;
+              Sala Online &rarr;
             </button>
           </div>
         </div>

@@ -15,7 +15,7 @@ test('two players can join the same room and start a game', async () => {
   const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:4173';
 
   await pageA.goto(baseURL);
-  await pageA.getByRole('button', { name: /jogar online/i }).click();
+  await pageA.getByRole('button', { name: /sala online/i }).click();
   await pageA.getByRole('textbox').first().fill('Alice');
   await pageA.getByRole('button', { name: /criar sala/i }).click();
 
@@ -24,7 +24,7 @@ test('two players can join the same room and start a game', async () => {
   const code = codeText!.match(/[A-Z0-9]{4}-[A-Z0-9]{4}/)![0];
 
   await pageB.goto(baseURL);
-  await pageB.getByRole('button', { name: /jogar online/i }).click();
+  await pageB.getByRole('button', { name: /sala online/i }).click();
   const inputs = pageB.getByRole('textbox');
   await inputs.first().fill('Bob');
   await inputs.nth(1).fill(code);

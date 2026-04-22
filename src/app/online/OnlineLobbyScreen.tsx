@@ -104,7 +104,7 @@ export function OnlineLobbyScreen() {
 
   return (
     <Shell>
-      <Header title="Jogar online" subtitle="Salas com até 4 jogadores" />
+      <Header title="Sala Online" subtitle="Salas com até 4 jogadores" />
 
       {step === 'choose' && (
         <>
