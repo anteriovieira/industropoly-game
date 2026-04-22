@@ -6,6 +6,7 @@ import { useRoomChannel } from '@/realtime/useRoomChannel';
 import { fetchActions, listMembers, appendAction } from '@/realtime/roomsApi';
 import { useGameStore } from '@/state/gameStore';
 import { GameScreen } from '../GameScreen';
+import { EmoteTray } from '@/ui/hud/EmoteTray';
 import type { GameActionRow, RoomMemberRow, BroadcastEvent } from '@/realtime/types';
 import type { Action, TokenKind } from '@/engine/types';
 
@@ -60,24 +61,28 @@ export function OnlineGameContainer() {
 
   const seatIndex = members.find((m) => m.user_id === userId)?.seat_index ?? null;
 
+  const [incoming, setIncoming] = useState<{ userId: string; emoji: string; key: number } | null>(null);
+  const broadcastRef = useRef<((ev: BroadcastEvent) => void) | null>(null);
+
   const channelCbsRef = useRef({
     onAction: (row: GameActionRow) => {
       onlineStore.getState().applyRemoteAction({ seq: row.seq, action: row.action as Action });
       const state = onlineStore.getState().state;
       if (state) loadGameState(state);
     },
-    onBroadcast: (_ev: BroadcastEvent) => {
-      // Wired in a later task (emotes/dice).
+    onBroadcast: (ev: BroadcastEvent) => {
+      if (ev.type === 'emote') setIncoming({ userId: ev.userId, emoji: ev.emoji, key: Date.now() });
     },
   });
 
-  useRoomChannel({
+  const channel = useRoomChannel({
     roomId,
     userId: userId ?? '',
     seatIndex,
     onAction: (row) => channelCbsRef.current.onAction(row),
     onBroadcast: (ev) => channelCbsRef.current.onBroadcast(ev),
   });
+  broadcastRef.current = channel.sendBroadcast;
 
   useEffect(() => {
     if (!roomId || members.length === 0) return;
@@ -103,5 +108,13 @@ export function OnlineGameContainer() {
   }, [members, onlineStore, roomId]);
 
   if (!bootstrapped) return <div style={{ padding: 24 }}>Carregando partida…</div>;
-  return <GameScreen />;
+  return (
+    <>
+      <GameScreen />
+      <EmoteTray
+        send={(ev) => broadcastRef.current?.({ ...ev, userId: userId ?? '' })}
+        incoming={incoming}
+      />
+    </>
+  );
 }
