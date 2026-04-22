@@ -25,10 +25,11 @@ export function tileFaceTexture(tile: Tile): THREE.CanvasTexture {
   if (!ctx) throw new Error('2D ctx unavailable');
 
   // Parchment-ish base per-face — vertical gradient + tiny grain so faces
-  // don't look perfectly uniform.
+  // don't look perfectly uniform. Kept light enough that dark ink text on
+  // the lower half reads clearly under the scene's warm, low-key lighting.
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, '#f0dca9');
-  grad.addColorStop(1, '#d7b373');
+  grad.addColorStop(0, '#fbedc6');
+  grad.addColorStop(1, '#eed5a0');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
   // Grain

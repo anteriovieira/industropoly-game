@@ -19,30 +19,20 @@ export function TileMesh({ tile, anchor, ownerColor = null, tier = 0, mortgaged 
   const { w, d, h } = tileSize();
   const setHovered = useUiStore((s) => s.setHoveredTile);
   const isHovered = useUiStore((s) => s.hoveredTile === tile.id);
-  const groupRef = useRef<THREE.Group>(null);
   const faceMatRef = useRef<THREE.MeshStandardMaterial>(null);
 
-  // Ease the tile's vertical lift + face emissive toward their hover target.
-  // Done in useFrame (not CSS-style transitions) so it moves in sync with
-  // the rendering loop and never fights React re-renders.
-  const targetLift = isHovered ? 0.12 : 0;
-  const targetEmissive = isHovered ? 0.18 : 0;
+  // Hover feedback is a subtle warm glow on the face only — no lift. Animated
+  // in useFrame so it eases in sync with the render loop.
+  const targetEmissive = isHovered ? 0.14 : 0;
   useFrame((_, delta) => {
-    const g = groupRef.current;
-    if (g) {
-      const baseY = h / 2 + 0.01;
-      const current = g.position.y - baseY;
-      g.position.y = baseY + THREE.MathUtils.damp(current, targetLift, 10, delta);
-    }
     const m = faceMatRef.current;
-    if (m) {
-      m.emissiveIntensity = THREE.MathUtils.damp(
-        m.emissiveIntensity,
-        targetEmissive,
-        10,
-        delta,
-      );
-    }
+    if (!m) return;
+    m.emissiveIntensity = THREE.MathUtils.damp(
+      m.emissiveIntensity,
+      targetEmissive,
+      10,
+      delta,
+    );
   });
 
   const handleOver = (e: ThreeEvent<PointerEvent>): void => {
@@ -65,7 +55,6 @@ export function TileMesh({ tile, anchor, ownerColor = null, tier = 0, mortgaged 
 
   return (
     <group
-      ref={groupRef}
       position={[anchor.x, h / 2 + 0.01, anchor.z]}
       rotation={[0, anchor.rotationY, 0]}
     >
