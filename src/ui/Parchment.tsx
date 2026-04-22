@@ -7,6 +7,10 @@ type ParchmentProps = {
   children: ReactNode;
   padding?: number | string;
   style?: CSSProperties;
+  /** Extra styles applied to the inner content container. Only meaningful in
+   *  framed mode — there, `style` lands on the outer brass frame and content-
+   *  layout props (display/flex/overflow) need to live on the inner div. */
+  bodyStyle?: CSSProperties;
   className?: string;
   as?: 'div' | 'section' | 'article' | 'aside';
   tone?: ParchmentTone;
@@ -51,6 +55,7 @@ export function Parchment({
   children,
   padding = 24,
   style,
+  bodyStyle,
   className,
   as: Tag = 'div',
   tone = 'default',
@@ -68,6 +73,7 @@ export function Parchment({
     boxShadow: ELEVATION_SHADOW[elevation],
     position: 'relative',
     ...(framed ? {} : style),
+    ...bodyStyle,
   };
 
   if (!framed) {

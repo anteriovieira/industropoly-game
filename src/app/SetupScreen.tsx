@@ -76,6 +76,17 @@ export function SetupScreen() {
           position: 'relative',
           zIndex: 1,
         }}
+        bodyStyle={{
+          // Make the parchment body itself the flex container so the middle
+          // section can scroll and the footer stays pinned. Without this the
+          // brass frame is the only flex container and the inner div is just
+          // a block — pushing the footer below the viewport on small screens.
+          display: 'flex',
+          flexDirection: 'column',
+          flex: '1 1 auto',
+          minHeight: 0,
+          overflow: 'hidden',
+        }}
       >
         {/* Header */}
         <header
