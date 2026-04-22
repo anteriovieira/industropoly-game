@@ -3,6 +3,8 @@ import { Parchment } from '@/ui/Parchment';
 
 interface ModalProps {
   title: string;
+  /** Small-caps category tag shown above the title (e.g. "Têxteis · Lancashire"). */
+  label?: string;
   onClose?: () => void;
   onConfirm?: () => void;
   confirmLabel?: string;
@@ -13,6 +15,7 @@ interface ModalProps {
 
 export function Modal({
   title,
+  label,
   onClose,
   onConfirm,
   confirmLabel = 'OK',
@@ -47,7 +50,12 @@ export function Modal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(26, 18, 10, 0.55)',
+        // Atmospheric backdrop: deep vignette + blur. Reads as "the lamp dims,
+        // the manuscript opens" instead of a flat alpha wash.
+        background:
+          'radial-gradient(ellipse at center, rgba(15, 9, 4, 0.72) 0%, rgba(5, 3, 1, 0.9) 100%)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
         display: 'grid',
         placeItems: 'center',
         zIndex: 50,
@@ -56,18 +64,48 @@ export function Modal({
         // (e.g. the HUD overlay). Re-enable here so the backdrop and dialog
         // always receive clicks regardless of where they're rendered.
         pointerEvents: 'auto',
+        animation: 'indModalBackdrop 180ms ease-out',
       }}
       onClick={(e) => {
         if (dismissible && e.target === e.currentTarget) onClose?.();
       }}
     >
       <Parchment
-        padding={24}
-        style={{ width: 'min(560px, 100%)', maxHeight: '80vh', overflow: 'auto' }}
+        padding={28}
+        framed
+        elevation="hero"
+        style={{
+          width: 'min(560px, 100%)',
+          maxHeight: '80vh',
+          overflow: 'auto',
+          animation: 'indModalEnter 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        }}
       >
         <div ref={ref} tabIndex={-1} style={{ outline: 'none' }}>
-          <h2 style={{ marginTop: 0 }}>{title}</h2>
-          <div style={{ margin: '12px 0 20px', lineHeight: 1.5 }}>{children}</div>
+          {label && (
+            <div
+              className="ind-label"
+              style={{ marginBottom: 6, color: 'var(--ink-muted)' }}
+            >
+              {label}
+            </div>
+          )}
+          <h2 style={{ marginTop: 0, marginBottom: 10 }}>{title}</h2>
+          {/* Brass divider between title and body */}
+          <div
+            aria-hidden="true"
+            style={{
+              height: 2,
+              marginBottom: 16,
+              background:
+                'linear-gradient(90deg, rgba(138, 100, 34, 0.8) 0%, rgba(232, 194, 106, 0.9) 50%, rgba(138, 100, 34, 0.8) 100%)',
+              borderRadius: 2,
+              boxShadow: '0 1px 0 rgba(250, 226, 160, 0.35)',
+            }}
+          />
+          <div style={{ margin: '0 0 20px', lineHeight: 1.55, color: 'var(--ink)' }}>
+            {children}
+          </div>
           <div
             style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', flexWrap: 'wrap' }}
           >

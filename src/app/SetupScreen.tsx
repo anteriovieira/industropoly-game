@@ -53,18 +53,18 @@ export function SetupScreen() {
 
   return (
     <div
+      className="ind-stage"
       style={{
-        position: 'fixed',
-        inset: 0,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'stretch',
         padding: 'clamp(12px, 3vw, 32px)',
-        background: 'linear-gradient(#1a120a, #342410)',
       }}
     >
       <Parchment
         padding={0}
+        framed
+        elevation="hero"
         style={{
           width: '100%',
           maxWidth: 1080,
@@ -73,22 +73,29 @@ export function SetupScreen() {
           flexDirection: 'column',
           gap: 0,
           minHeight: 0,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Header */}
         <header
           style={{
             flex: '0 0 auto',
-            padding: 'clamp(16px, 3vw, 28px) clamp(20px, 3vw, 32px)',
-            borderBottom: '1px solid rgba(59, 43, 24, 0.25)',
+            padding: 'clamp(18px, 3vw, 28px) clamp(22px, 3vw, 32px)',
+            borderBottom: '1px solid rgba(26, 14, 6, 0.25)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 12,
+            gap: 14,
           }}
         >
-          <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 3vw, 2.3rem)' }}>
-            Reúna os Investidores
-          </h1>
+          <div>
+            <div className="ind-label" style={{ marginBottom: 4 }}>
+              Preparação
+            </div>
+            <h1 style={{ margin: 0, fontSize: 'clamp(1.7rem, 3vw, 2.4rem)' }}>
+              Reúna os Investidores
+            </h1>
+          </div>
           <p style={{ margin: 0, color: 'var(--ink-soft)', fontSize: '0.95rem' }}>
             Escolha o número de jogadores, nomeie cada um e selecione uma peça única.
           </p>
@@ -96,21 +103,21 @@ export function SetupScreen() {
           <div
             role="radiogroup"
             aria-label="Número de jogadores"
-            style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}
           >
-            <span style={{ fontSize: '0.9rem', color: 'var(--ink-soft)' }}>Jogadores:</span>
-            {[2, 3, 4].map((n) => (
-              <button
-                key={n}
-                role="radio"
-                aria-checked={count === n}
-                className={count === n ? 'primary' : 'ghost'}
-                onClick={() => setCount(n)}
-                style={{ minWidth: 48 }}
-              >
-                {n}
-              </button>
-            ))}
+            <span className="ind-label">Jogadores</span>
+            <div className="ind-segment">
+              {[2, 3, 4].map((n) => (
+                <button
+                  key={n}
+                  role="radio"
+                  aria-checked={count === n}
+                  onClick={() => setCount(n)}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
           </div>
         </header>
 
@@ -144,7 +151,7 @@ export function SetupScreen() {
           style={{
             flex: '0 0 auto',
             padding: 'clamp(14px, 2vw, 20px) clamp(20px, 3vw, 32px)',
-            borderTop: '1px solid rgba(59, 43, 24, 0.25)',
+            borderTop: '1px solid rgba(26, 14, 6, 0.25)',
             display: 'flex',
             gap: 12,
             justifyContent: 'space-between',
@@ -163,7 +170,7 @@ export function SetupScreen() {
               Cada jogador precisa de um nome e de uma peça única.
             </span>
           )}
-          <button className="primary" disabled={!valid} onClick={start}>
+          <button className="primary hero" disabled={!valid} onClick={start}>
             Iniciar Jogo →
           </button>
         </footer>
@@ -185,31 +192,38 @@ function PlayerCard({ index, draft, accent, taken, onUpdate }: PlayerCardProps) 
     <section
       aria-label={`Jogador ${index + 1}`}
       style={{
-        background: 'rgba(255, 247, 214, 0.5)',
-        border: `1px solid rgba(59, 43, 24, 0.3)`,
-        borderLeft: `4px solid ${accent}`,
-        borderRadius: 10,
+        background:
+          'linear-gradient(180deg, rgba(255, 247, 214, 0.65) 0%, rgba(244, 230, 188, 0.5) 100%)',
+        border: '1px solid rgba(26, 14, 6, 0.3)',
+        borderLeft: `5px solid ${accent}`,
+        borderRadius: 12,
         padding: 'clamp(14px, 2vw, 18px)',
         display: 'flex',
         flexDirection: 'column',
         gap: 14,
         minWidth: 0,
+        boxShadow:
+          'inset 0 1px 0 rgba(250, 226, 160, 0.4), 0 2px 8px rgba(10, 6, 2, 0.15)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span
           aria-hidden="true"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 28,
-            height: 28,
+            width: 32,
+            height: 32,
             borderRadius: '50%',
-            background: accent,
+            background:
+              `radial-gradient(circle at 30% 25%, ${accent} 0%, ${accent} 55%, rgba(0,0,0,0.35) 100%)`,
             color: '#fff5d6',
             fontFamily: 'var(--font-display)',
-            fontSize: '1rem',
+            fontSize: '1.05rem',
+            boxShadow:
+              '0 0 0 2px #8a6422, 0 0 0 3px #e8c26a,' +
+              'inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 3px rgba(0,0,0,0.35)',
           }}
         >
           {index + 1}

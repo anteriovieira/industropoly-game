@@ -16,6 +16,7 @@ import { FactsJournal } from '@/ui/modals/FactsJournal';
 import { AcquisitionsModal } from '@/ui/modals/AcquisitionsModal';
 import { HistoryModal } from '@/ui/modals/HistoryModal';
 import { CameraHint } from '@/ui/CameraHint';
+import { TileTooltip } from '@/ui/TileTooltip';
 import { activePlayer } from '@/engine/selectors';
 import { save } from '@/lib/persist';
 import { useGameAudio } from '@/lib/audioSideEffects';
@@ -79,6 +80,7 @@ export function GameScreen() {
       const p = activePlayer(state);
       if (e.code === 'Space' && state.turnPhase === 'awaiting-roll' && !p.inPrison) {
         e.preventDefault();
+        useUiStore.getState().bumpDiceRoll();
         dispatch({ type: 'ROLL_DICE' });
       } else if (
         (e.key.toLowerCase() === 'e' || e.code === 'Space') &&
@@ -103,7 +105,10 @@ export function GameScreen() {
         }
         const next = state.players[nextIdx]!;
         dispatch({ type: 'END_TURN' });
-        if (!next.inPrison) dispatch({ type: 'ROLL_DICE' });
+        if (!next.inPrison) {
+          useUiStore.getState().bumpDiceRoll();
+          dispatch({ type: 'ROLL_DICE' });
+        }
       } else if (e.key.toLowerCase() === 'b' && state.modal?.kind === 'tile-info') {
         dispatch({ type: 'BUY_TILE' });
       } else if (e.key.toLowerCase() === 'j') {
@@ -156,6 +161,7 @@ export function GameScreen() {
         </div>
       </SceneErrorBoundary>
       <Hud />
+      <TileTooltip />
       <GameToaster />
       <CameraHint />
       {state.turnPhase === 'awaiting-quiz-answer' && state.currentQuiz && <QuestionModal />}

@@ -28,6 +28,7 @@ export function TileInfoModal({ tileId, readOnly = false }: { tileId: number; re
   return (
     <Modal
       title={tile.name}
+      label={`${roleLabel(tile)} · ${tile.education.date}`}
       onClose={() => dispatch({ type: 'ACK_MODAL' })}
       footer={
         <>
@@ -61,53 +62,76 @@ export function TileInfoModal({ tileId, readOnly = false }: { tileId: number; re
 }
 
 function TileBody({ tile }: { tile: Tile }) {
+  const band = sectorBand(tile);
   return (
     <>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
-        <div
+      {/* Sector swatch — brass-ringed chip that feels like an inlaid jewel */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+        <span
+          aria-hidden="true"
           style={{
-            width: 10,
-            height: 10,
-            borderRadius: 10,
-            background: sectorBand(tile),
-            border: '1px solid #3b2b18',
+            width: 18,
+            height: 18,
+            borderRadius: 4,
+            background: band,
+            boxShadow:
+              '0 0 0 1px #8a6422, 0 0 0 2px #e8c26a, 0 0 0 3px #8a6422,' +
+              'inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -1px 2px rgba(0,0,0,0.3)',
           }}
         />
-        <em>
-          {roleLabel(tile)} — {tile.education.date}
-        </em>
+        <strong style={{ fontSize: '1.08rem', color: 'var(--ink)' }}>
+          {tile.education.title}
+        </strong>
       </div>
-      <strong style={{ fontSize: '1.05rem' }}>{tile.education.title}</strong>
-      <p style={{ margin: '0.5em 0 0.75em' }}>{tile.education.blurb}</p>
-      <small style={{ opacity: 0.75 }}>Fonte: {tile.education.source}</small>
+      <p style={{ margin: '0 0 10px' }}>{tile.education.blurb}</p>
+      <small style={{ color: 'var(--ink-muted)', fontStyle: 'italic' }}>
+        Fonte: {tile.education.source}
+      </small>
       {'price' in tile && (
         <div
           style={{
-            marginTop: 14,
-            padding: '8px 12px',
-            background: 'rgba(0,0,0,0.05)',
-            border: '1px solid rgba(0,0,0,0.2)',
+            marginTop: 16,
+            padding: '12px 14px',
+            background:
+              'linear-gradient(180deg, rgba(26, 14, 6, 0.08) 0%, rgba(26, 14, 6, 0.04) 100%)',
+            border: '1px solid rgba(26, 14, 6, 0.25)',
+            borderLeft: '3px solid #c9943a',
             borderRadius: 6,
+            boxShadow: 'inset 0 1px 0 rgba(250, 226, 160, 0.25)',
+            display: 'grid',
+            gap: 6,
           }}
         >
-          <div>
-            <strong>Preço:</strong> R${tile.price}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span className="ind-label">Preço</span>
+            <span
+              className="ind-tabular"
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.15rem',
+                color: 'var(--copper)',
+              }}
+            >
+              R${tile.price}
+            </span>
           </div>
           {tile.role === 'industry' && (
-            <div>
-              <strong>Aluguel:</strong> R${tile.rents[0]} base; até R${tile.rents[5]} no nível Império.
-              Melhoria R${tile.upgradeCost}.
+            <div style={{ fontSize: '0.88rem', color: 'var(--ink-soft)' }}>
+              <span className="ind-label" style={{ fontSize: '0.68rem' }}>Aluguel</span>{' '}
+              R${tile.rents[0]} base · até R${tile.rents[5]} no nível Império · melhoria R${tile.upgradeCost}.
             </div>
           )}
           {tile.role === 'transport' && (
-            <div>
-              <strong>Aluguel:</strong> por rotas possuídas — R${tile.rentByCount[0]} / R${tile.rentByCount[1]} /
+            <div style={{ fontSize: '0.88rem', color: 'var(--ink-soft)' }}>
+              <span className="ind-label" style={{ fontSize: '0.68rem' }}>Aluguel</span>{' '}
+              por rotas possuídas — R${tile.rentByCount[0]} / R${tile.rentByCount[1]} /
               R${tile.rentByCount[2]} / R${tile.rentByCount[3]}.
             </div>
           )}
           {tile.role === 'utility' && (
-            <div>
-              <strong>Aluguel:</strong> dados × {tile.multipliers[0]} (uma só) ou × {tile.multipliers[1]} (ambas).
+            <div style={{ fontSize: '0.88rem', color: 'var(--ink-soft)' }}>
+              <span className="ind-label" style={{ fontSize: '0.68rem' }}>Aluguel</span>{' '}
+              dados × {tile.multipliers[0]} (uma só) ou × {tile.multipliers[1]} (ambas).
             </div>
           )}
         </div>

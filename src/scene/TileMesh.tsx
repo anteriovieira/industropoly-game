@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import type { ThreeEvent } from '@react-three/fiber';
+import { useMemo, useRef } from 'react';
+import { useFrame, type ThreeEvent } from '@react-three/fiber';
+import * as THREE from 'three';
 import type { Tile } from '@/engine/types';
 import { tileFaceTexture } from './tileFaceTexture';
 import { tileSize, type TileAnchor } from './layout';
@@ -17,6 +18,32 @@ export function TileMesh({ tile, anchor, ownerColor = null, tier = 0, mortgaged 
   const face = useMemo(() => tileFaceTexture(tile), [tile]);
   const { w, d, h } = tileSize();
   const setHovered = useUiStore((s) => s.setHoveredTile);
+  const isHovered = useUiStore((s) => s.hoveredTile === tile.id);
+  const groupRef = useRef<THREE.Group>(null);
+  const faceMatRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  // Ease the tile's vertical lift + face emissive toward their hover target.
+  // Done in useFrame (not CSS-style transitions) so it moves in sync with
+  // the rendering loop and never fights React re-renders.
+  const targetLift = isHovered ? 0.12 : 0;
+  const targetEmissive = isHovered ? 0.18 : 0;
+  useFrame((_, delta) => {
+    const g = groupRef.current;
+    if (g) {
+      const baseY = h / 2 + 0.01;
+      const current = g.position.y - baseY;
+      g.position.y = baseY + THREE.MathUtils.damp(current, targetLift, 10, delta);
+    }
+    const m = faceMatRef.current;
+    if (m) {
+      m.emissiveIntensity = THREE.MathUtils.damp(
+        m.emissiveIntensity,
+        targetEmissive,
+        10,
+        delta,
+      );
+    }
+  });
 
   const handleOver = (e: ThreeEvent<PointerEvent>): void => {
     e.stopPropagation();
@@ -37,17 +64,32 @@ export function TileMesh({ tile, anchor, ownerColor = null, tier = 0, mortgaged 
   const stripY = h / 2 + stripHeight / 2 + 0.002;
 
   return (
-    <group position={[anchor.x, h / 2 + 0.01, anchor.z]} rotation={[0, anchor.rotationY, 0]}>
+    <group
+      ref={groupRef}
+      position={[anchor.x, h / 2 + 0.01, anchor.z]}
+      rotation={[0, anchor.rotationY, 0]}
+    >
       <mesh castShadow receiveShadow onPointerOver={handleOver} onPointerOut={handleOut}>
         <boxGeometry args={[w, h, d]} />
         {/* Six materials: right, left, top(face), bottom, front, back.
-            We want the face on top (index 2 in BoxGeometry order). */}
-        <meshStandardMaterial attach="material-0" color="#b08a4d" />
-        <meshStandardMaterial attach="material-1" color="#b08a4d" />
-        <meshStandardMaterial attach="material-2" map={face} roughness={0.85} />
-        <meshStandardMaterial attach="material-3" color="#8f6b36" />
-        <meshStandardMaterial attach="material-4" color="#b08a4d" />
-        <meshStandardMaterial attach="material-5" color="#b08a4d" />
+            Side/bottom faces use a deeper stained-wood tone so the tile edge
+            reads as an inlaid wooden block instead of a painted cardboard.
+            The top face carries a warm emissive tint that fades in/out on
+            hover — reads as parchment picking up a lamp's glow. */}
+        <meshStandardMaterial attach="material-0" color="#5c3d1f" roughness={0.75} metalness={0.02} />
+        <meshStandardMaterial attach="material-1" color="#5c3d1f" roughness={0.75} metalness={0.02} />
+        <meshStandardMaterial
+          ref={faceMatRef}
+          attach="material-2"
+          map={face}
+          roughness={0.82}
+          metalness={0.02}
+          emissive="#ffcc66"
+          emissiveIntensity={0}
+        />
+        <meshStandardMaterial attach="material-3" color="#3a2511" roughness={0.85} metalness={0.02} />
+        <meshStandardMaterial attach="material-4" color="#5c3d1f" roughness={0.75} metalness={0.02} />
+        <meshStandardMaterial attach="material-5" color="#5c3d1f" roughness={0.75} metalness={0.02} />
       </mesh>
 
       {showOwnerIndicator && (
@@ -135,7 +177,7 @@ function OwnershipBadge({
             return (
               <mesh key={i} position={[xOffset, pipY, pipZ]} castShadow>
                 <boxGeometry args={[pipSize, pipHeight, pipSize]} />
-                <meshStandardMaterial color="#2d5a3a" roughness={0.55} />
+                <meshStandardMaterial color="#3a6b4a" roughness={0.5} metalness={0.05} />
               </mesh>
             );
           })}
@@ -145,7 +187,7 @@ function OwnershipBadge({
       {!mortgaged && isHotel && (
         <mesh position={[pipAreaCenter, pipY, pipZ]} castShadow>
           <boxGeometry args={[pipAreaWidth * 0.7, pipHeight * 1.3, pipSize * 1.1]} />
-          <meshStandardMaterial color="#8a2a1b" roughness={0.55} />
+          <meshStandardMaterial color="#a83a28" roughness={0.48} metalness={0.08} />
         </mesh>
       )}
 
@@ -182,34 +224,35 @@ function OwnershipFlag({ color, mortgaged, baseX, baseY, baseZ, stripDepth }: Fl
 
   return (
     <group>
-      {/* Base cap — disc that grounds the pole on the strip */}
+      {/* Base cap — brass disc grounding the pole on the strip */}
       <mesh position={[baseX, baseY + 0.008, baseZ]} castShadow>
-        <cylinderGeometry args={[poleRadius * 1.8, poleRadius * 1.8, 0.016, 10]} />
-        <meshStandardMaterial color="#1a120a" roughness={0.75} />
+        <cylinderGeometry args={[poleRadius * 1.8, poleRadius * 1.8, 0.016, 12]} />
+        <meshStandardMaterial color="#c9943a" roughness={0.35} metalness={0.9} />
       </mesh>
 
-      {/* Pole */}
+      {/* Pole — polished brass */}
       <mesh position={[baseX, baseY + poleHeight / 2, baseZ]} castShadow>
-        <cylinderGeometry args={[poleRadius, poleRadius, poleHeight, 8]} />
-        <meshStandardMaterial color="#3b2b18" roughness={0.6} />
+        <cylinderGeometry args={[poleRadius, poleRadius, poleHeight, 10]} />
+        <meshStandardMaterial color="#c9943a" roughness={0.28} metalness={0.95} />
       </mesh>
 
-      {/* Pennant — rectangular flag in the owner's color */}
+      {/* Pennant — rectangular flag in the owner's color, slight sheen */}
       <mesh position={[flagCenterX, flagCenterY, baseZ]} castShadow>
         <boxGeometry args={[flagWidth, flagHeight, flagThickness]} />
         <meshStandardMaterial
           color={color}
           transparent={mortgaged}
           opacity={mortgaged ? 0.35 : 1}
-          roughness={0.5}
+          roughness={0.42}
+          metalness={0.05}
           side={2}
         />
       </mesh>
 
-      {/* Finial — small sphere on top of the pole */}
+      {/* Finial — polished brass sphere catching HDRI reflections */}
       <mesh position={[baseX, baseY + poleHeight + poleRadius, baseZ]} castShadow>
-        <sphereGeometry args={[poleRadius * 1.6, 10, 8]} />
-        <meshStandardMaterial color="#c9a96b" roughness={0.4} metalness={0.3} />
+        <sphereGeometry args={[poleRadius * 1.7, 14, 10]} />
+        <meshStandardMaterial color="#e8c26a" roughness={0.22} metalness={0.98} />
       </mesh>
     </group>
   );

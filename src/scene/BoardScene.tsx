@@ -1,16 +1,26 @@
-import { Canvas } from '@react-three/fiber';
-import { MapControls } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { MapControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { Board } from './Board';
 import { Tokens } from './tokens/Tokens';
 import { Dice } from './Dice';
+import { TableProps } from './TableProps';
+import {
+  EffectComposer,
+  Bloom,
+  Vignette,
+} from '@react-three/postprocessing';
+import { BlendFunction, KernelSize } from 'postprocessing';
 import { useUiStore } from '@/state/uiStore';
 import { anchorForTile } from './layout';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MapControls as MapControlsImpl } from 'three-stdlib';
 import { reportToLogBridge } from '@/lib/logBridge';
 
-const DEFAULT_CAMERA_POS: [number, number, number] = [0, 22, 22];
+// Seated-player POV. Lower Y + further Z produces a strong perspective tilt
+// where the far edge of the board recedes and the near edge is close —
+// matches the Catan Universe reference framing.
+const DEFAULT_CAMERA_POS: [number, number, number] = [0, 14, 28];
 // Clamp the pan target so the board stays roughly visible — the board is 20 units wide
 // and centred at the origin, so allowing ±12 on each axis is plenty of headroom without
 // letting the user strand the board off-screen.
@@ -105,6 +115,11 @@ export function BoardScene() {
       onCreated={({ gl, size, camera }) => {
         if (shadowsEnabled) gl.shadowMap.type = shadowMapType;
         gl.outputColorSpace = THREE.SRGBColorSpace;
+        // Filmic tonemapping flattens highlights and lifts shadows for a
+        // warmer, board-game-print look. Exposure slightly under 1 keeps
+        // bright parchment from blowing out under the new HDRI.
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 0.95;
         const rawGl = gl.getContext() as WebGLRenderingContext | WebGL2RenderingContext;
         const canvas = gl.domElement;
         const lostAtBoot =
@@ -140,25 +155,94 @@ export function BoardScene() {
       style={{ touchAction: 'none' }}
       aria-hidden="true"
     >
-      <color attach="background" args={['#1a120a']} />
-      <fog attach="fog" args={['#1a120a', 40, 100]} />
+      {/* Warm ambient room color — what bleeds through the fog at the
+          horizon. Reads as "dim parlour with a lit fireplace somewhere"
+          instead of a black void. */}
+      <color attach="background" args={['#1f1208']} />
+      {/* Warm fog — table surface fades into the room atmosphere at the
+          edges. Shortened so the table feels enclosed in warm light. */}
+      <fog attach="fog" args={['#2a1608', 28, 70]} />
 
-      <hemisphereLight args={['#ffe6b0', '#2a1b0a', 0.35]} />
-      <ambientLight intensity={0.2} />
+      {/* HDRI-based image-based lighting — provides soft reflections on brass
+          and subtle color variation across parchment. Skip on coarse-pointer
+          devices to protect iPad memory. */}
+      {!isCoarsePointer && (
+        <Environment
+          preset="apartment"
+          environmentIntensity={0.4}
+          background={false}
+        />
+      )}
+
+      {/* Warm hemisphere — very soft bounced light from ceiling and floor.
+          Kept low so the pool-of-light from the overhead lamp can dominate
+          the contrast ratio, matching the Catan reference's dramatic look. */}
+      <hemisphereLight args={['#ffcf8c', '#0f0804', 0.18]} />
+
+      {/* Key light — a warm chandelier from front-left, high. Softer than
+          before so the central point-light is the star. */}
       <directionalLight
-        position={[10, 18, 8]}
-        intensity={1.2}
+        position={[8, 20, 12]}
+        intensity={0.85}
+        color="#ffdc9a"
         castShadow={shadowsEnabled && quality !== 'low'}
         shadow-mapSize={quality === 'high' ? 2048 : 1024}
-        shadow-camera-left={-18}
-        shadow-camera-right={18}
-        shadow-camera-top={18}
-        shadow-camera-bottom={-18}
+        shadow-camera-left={-22}
+        shadow-camera-right={22}
+        shadow-camera-top={22}
+        shadow-camera-bottom={-22}
+        shadow-bias={-0.0005}
+        shadow-normalBias={0.02}
+      />
+
+      {/* Fill light — cool soft glow from camera-right to balance the warm
+          key without killing contrast. Very weak, no shadow. */}
+      <directionalLight position={[-10, 8, -4]} intensity={0.2} color="#8aa5c2" />
+
+      {/* Rim light — hot orange from far/low behind the board. Edge-lights
+          tokens and flag poles so they pop against the dark wood. */}
+      <directionalLight position={[0, 5, -18]} intensity={0.55} color="#ff8a3a" />
+
+      {/* Overhead lamp — a bright tight warm pool directly above the board,
+          casting shadows straight down. This is the dramatic "spotlight on
+          the table" effect: bright parchment center, dark table edges. */}
+      <pointLight
+        position={[0, 15, 0]}
+        intensity={90}
+        distance={32}
+        decay={2}
+        color="#ffd288"
+        castShadow={shadowsEnabled && quality !== 'low'}
+        shadow-mapSize={quality === 'high' ? 1024 : 512}
+        shadow-bias={-0.0004}
       />
 
       <Board />
+      <TableProps />
       <Tokens />
       <Dice />
+      <CameraIdleDrift controls={controls} />
+      <RollAnticipation />
+
+      {/* Post-processing — adds the cinematic polish that pushes the scene
+          from "rendered model" to "production game". Skipped on coarse-pointer
+          devices (iPad) to protect WebGL memory. */}
+      {!isCoarsePointer && (
+        <EffectComposer multisampling={0} enableNormalPass={false}>
+          <Bloom
+            intensity={0.55}
+            luminanceThreshold={0.65}
+            luminanceSmoothing={0.3}
+            kernelSize={KernelSize.LARGE}
+            mipmapBlur
+          />
+          <Vignette
+            offset={0.32}
+            darkness={0.78}
+            blendFunction={BlendFunction.NORMAL}
+          />
+        </EffectComposer>
+      )}
 
       {/* MapControls: left-click drag = pan, right-click drag = rotate, wheel = zoom.
           `zoomToCursor` makes wheel zoom move toward whatever is under the pointer —
@@ -229,6 +313,101 @@ function ContextLostNotice() {
 
 function clamp(v: number, min: number, max: number): number {
   return v < min ? min : v > max ? max : v;
+}
+
+// Subtle camera breathing while idle. Orbits the camera around the controls
+// target by ~1.5° at a ~14s period, and lifts it by a tiny amount. Pauses
+// whenever the user interacts with the controls and resumes after 2.5s of
+// stillness. Meant to kill the "static render" feeling.
+const IDLE_TIMEOUT_MS = 2500;
+const DRIFT_AMPL_RAD = (1.5 * Math.PI) / 180;
+const DRIFT_PERIOD_S = 14;
+function CameraIdleDrift({ controls }: { controls: React.MutableRefObject<any> }) {
+  const lastInteractionRef = useRef(performance.now());
+  const baselineRef = useRef<{ angle: number; radius: number; y: number } | null>(null);
+  const tRef = useRef(0);
+
+  useEffect(() => {
+    const c = controls.current;
+    if (!c) return;
+    const mark = (): void => {
+      lastInteractionRef.current = performance.now();
+      baselineRef.current = null; // re-capture baseline on next idle tick
+    };
+    c.addEventListener('start', mark);
+    c.addEventListener('change', mark);
+    return () => {
+      c.removeEventListener('start', mark);
+      c.removeEventListener('change', mark);
+    };
+  }, [controls]);
+
+  useFrame((_, delta) => {
+    const c = controls.current;
+    if (!c) return;
+    const idleMs = performance.now() - lastInteractionRef.current;
+    if (idleMs < IDLE_TIMEOUT_MS) return;
+
+    // Capture a baseline the first tick after we become idle; then perturb
+    // relative to it. This way a zoom/pan by the user during idle resets
+    // cleanly rather than compounding.
+    const cam = c.object as THREE.PerspectiveCamera;
+    const t = c.target as THREE.Vector3;
+    if (!baselineRef.current) {
+      const dx = cam.position.x - t.x;
+      const dz = cam.position.z - t.z;
+      baselineRef.current = {
+        angle: Math.atan2(dz, dx),
+        radius: Math.hypot(dx, dz),
+        y: cam.position.y,
+      };
+      tRef.current = 0;
+    }
+    tRef.current += delta;
+    const phase = (tRef.current / DRIFT_PERIOD_S) * Math.PI * 2;
+    const b = baselineRef.current;
+    const a = b.angle + Math.sin(phase) * DRIFT_AMPL_RAD;
+    cam.position.x = t.x + Math.cos(a) * b.radius;
+    cam.position.z = t.z + Math.sin(a) * b.radius;
+    cam.position.y = b.y + Math.sin(phase * 0.7) * 0.12;
+    cam.lookAt(t);
+  });
+  return null;
+}
+
+// Dice-roll anticipation: a short FOV punch when a roll starts. Operating on
+// fov — not position — avoids fighting MapControls, and the dolly-in feel
+// reads as "the room tightens around the throw". Eases back over 600ms.
+const ROLL_PUNCH_FOV = 3.2;
+const ROLL_PUNCH_MS = 600;
+function RollAnticipation() {
+  const rollNonce = useUiStore((s) => s.diceRollNonce);
+  const startAt = useRef<number | null>(null);
+  const lastNonce = useRef(rollNonce);
+  const baselineFov = useRef<number | null>(null);
+  useFrame(({ camera }) => {
+    if (!(camera instanceof THREE.PerspectiveCamera)) return;
+    if (rollNonce !== lastNonce.current) {
+      lastNonce.current = rollNonce;
+      startAt.current = performance.now();
+      baselineFov.current = camera.fov;
+    }
+    if (startAt.current == null || baselineFov.current == null) return;
+    const elapsed = performance.now() - startAt.current;
+    if (elapsed > ROLL_PUNCH_MS) {
+      camera.fov = baselineFov.current;
+      camera.updateProjectionMatrix();
+      startAt.current = null;
+      baselineFov.current = null;
+      return;
+    }
+    const t = elapsed / ROLL_PUNCH_MS;
+    // Peak at 25% of the animation, then ease back — anticipation, not just a zoom.
+    const curve = t < 0.25 ? t / 0.25 : 1 - (t - 0.25) / 0.75;
+    camera.fov = baselineFov.current - curve * ROLL_PUNCH_FOV;
+    camera.updateProjectionMatrix();
+  });
+  return null;
 }
 
 function qualityPreset(q: 'low' | 'medium' | 'high'): {

@@ -19,9 +19,18 @@ import { PLAYER_COLORS, sectorPalette } from './theme';
 
 const SHAKE_PREF_KEY = 'industropoly:shakeToRoll';
 const HUD_LAYOUT_KEY = 'industropoly:hudLayout';
-const CARD_DEFAULT_WIDTH = 180;
-const CARD_DEFAULT_GAP = 12;
+const CARD_DEFAULT_WIDTH = 210;
+const CARD_DEFAULT_GAP = 14;
 const MINIMAP_APPROX_SIZE = 140;
+
+const TOKEN_INITIAL: Record<string, string> = {
+  locomotive: '🚂',
+  'top-hat': '🎩',
+  'cotton-bobbin': '🧵',
+  pickaxe: '⛏',
+  'pocket-watch': '⏱',
+  'factory-chimney': '🏭',
+};
 
 function loadShakePref(): boolean {
   try {
@@ -71,6 +80,7 @@ export function Hud() {
   const setPhase = useUiStore((s) => s.setPhase);
   const setNotice = useUiStore((s) => s.setNotice);
   const resetCamera = useUiStore((s) => s.resetCamera);
+  const bumpDiceRoll = useUiStore((s) => s.bumpDiceRoll);
   const [confirmingQuit, setConfirmingQuit] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<PlayerId>>(new Set());
   const [shakeEnabled, setShakeEnabled] = useState<boolean>(loadShakePref);
@@ -185,9 +195,11 @@ export function Hud() {
       // them unless they're in prison — in that case the reducer would
       // reject ROLL_DICE and the prison-decision UI takes over.
       if (!nextRoller.inPrison) {
+        bumpDiceRoll();
         dispatch({ type: 'ROLL_DICE' });
       }
     } else if (canRoll) {
+      bumpDiceRoll();
       dispatch({ type: 'ROLL_DICE' });
     }
   }
@@ -279,48 +291,86 @@ export function Hud() {
       <div
         style={{
           position: 'absolute',
-          bottom: 16,
+          bottom: 18,
           left: 16,
           right: 16,
           display: 'flex',
-          gap: 8,
-          alignItems: 'center',
+          gap: 10,
+          alignItems: 'stretch',
           justifyContent: 'center',
           pointerEvents: 'auto',
           flexWrap: 'wrap',
         }}
       >
-        <Parchment padding="6px 14px" style={{ minWidth: 220, alignSelf: 'stretch', display: 'flex', alignItems: 'center' }}>
+        <Parchment
+          padding="8px 16px"
+          elevation="high"
+          style={{
+            minWidth: 240,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
           <div style={{ flex: 1, minWidth: 0 }}>
             {canEnd && !samePlayerAgain ? (
               <>
-                <div style={{ fontFamily: 'var(--font-display)', lineHeight: 1.15 }}>
-                  Próximo: {nextRoller.name}
+                <div className="ind-label" style={{ marginBottom: 2 }}>
+                  Próximo lançamento
                 </div>
-                <div style={{ fontSize: '0.8rem', opacity: 0.8, lineHeight: 1.15 }}>
-                  Turno {state.turn} concluído · {active.name}
+                <div
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '1.15rem',
+                    lineHeight: 1.1,
+                    color: 'var(--ink)',
+                  }}
+                >
+                  {nextRoller.name}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', lineHeight: 1.2, marginTop: 2 }}>
+                  Turno {state.turn} concluído por {active.name}
                 </div>
               </>
             ) : (
               <>
-                <div style={{ fontFamily: 'var(--font-display)', lineHeight: 1.15 }}>
-                  Turno {state.turn} — {active.name}
+                <div className="ind-label" style={{ marginBottom: 2 }}>
+                  Turno {state.turn} · {PHASE_LABELS[phase]}
                 </div>
-                <div style={{ fontSize: '0.8rem', opacity: 0.8, lineHeight: 1.15 }}>
-                  {canEnd && samePlayerAgain
-                    ? 'Dupla! Mesmo jogador lança de novo'
-                    : `Fase: ${PHASE_LABELS[phase]}`}
+                <div
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '1.2rem',
+                    lineHeight: 1.1,
+                    color: 'var(--ink)',
+                  }}
+                >
+                  {active.name}
                 </div>
+                {canEnd && samePlayerAgain && (
+                  <div
+                    style={{
+                      fontSize: '0.8rem',
+                      color: 'var(--accent)',
+                      lineHeight: 1.2,
+                      marginTop: 2,
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    Dupla! Mesmo jogador lança de novo
+                  </div>
+                )}
               </>
             )}
           </div>
         </Parchment>
         <button
-          className="primary"
+          className="primary hero"
           disabled={!canRollButton}
           onClick={handleRoll}
           aria-label={rollLabel}
         >
+          <span aria-hidden="true" style={{ marginRight: 8, fontSize: '1.1em' }}>🎲</span>
           {rollLabel}
         </button>
         <button
@@ -341,7 +391,7 @@ export function Hud() {
           aria-label="Ver casa atual (I)"
           title="Ver casa atual (I)"
         >
-          Info (I)
+          <span aria-hidden="true" style={{ marginRight: 6 }}>📜</span>Info (I)
         </button>
         <HudMenu
           shakeSupported={shakeSupported}
@@ -409,6 +459,8 @@ function PlayerCard({
     defaultPos,
   });
 
+  const tokenGlyph = TOKEN_INITIAL[player.token] ?? '⚙';
+
   return (
     <div
       ref={ref}
@@ -428,173 +480,223 @@ function PlayerCard({
         zIndex: isDragging ? 10 : undefined,
       }}
     >
-    <Parchment
-      padding="10px 14px"
-      style={{
-        minWidth: expanded ? 220 : 160,
-        maxWidth: expanded ? 260 : undefined,
-        opacity: player.bankrupt ? 0.45 : 1,
-        border: isActive ? `2px solid ${color}` : '1px solid rgba(59,43,24,0.4)',
-        transition: 'min-width 120ms ease',
-        boxShadow: isDragging
-          ? '0 12px 32px rgba(0,0,0,0.45), inset 0 0 60px rgba(121,85,42,0.25)'
-          : undefined,
-      }}
-    >
-      <button
-        onClick={onToggle}
-        aria-expanded={expanded}
-        aria-label={`${expanded ? 'Recolher' : 'Expandir'} ficha de ${player.name}`}
+      <Parchment
+        padding="10px 14px 12px"
+        framed
+        elevation={isDragging ? 'hero' : isActive ? 'high' : 'mid'}
         style={{
-          all: 'unset',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          fontFamily: 'var(--font-display)',
-          fontSize: '1.1rem',
-          width: '100%',
+          minWidth: expanded ? 240 : 200,
+          maxWidth: expanded ? 280 : undefined,
+          opacity: player.bankrupt ? 0.45 : 1,
+          transition: 'min-width var(--motion-base)',
+          // Active-turn golden halo
+          outline: isActive ? '2px solid rgba(250, 226, 160, 0.7)' : undefined,
+          outlineOffset: isActive ? '2px' : undefined,
+          filter: isActive
+            ? 'drop-shadow(0 0 12px rgba(250, 226, 160, 0.35))'
+            : undefined,
         }}
       >
-        <span
-          aria-hidden="true"
+        <button
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={`${expanded ? 'Recolher' : 'Expandir'} ficha de ${player.name}`}
           style={{
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            borderRadius: 10,
-            background: color,
-            flexShrink: 0,
-          }}
-        />
-        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {player.name}
-        </span>
-        <span
-          style={{
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          R${player.cash}
-        </span>
-        <span
-          aria-hidden="true"
-          style={{
-            display: 'inline-flex',
+            all: 'unset',
+            cursor: 'pointer',
+            display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            width: 22,
-            height: 22,
-            borderRadius: 4,
-            background: 'rgba(59,43,24,0.12)',
-            border: '1px solid rgba(59,43,24,0.35)',
-            fontSize: '0.9rem',
-            lineHeight: 1,
-            color: 'rgba(59,43,24,0.9)',
-            transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 120ms ease',
-            flexShrink: 0,
+            gap: 10,
+            width: '100%',
           }}
         >
-          ▸
-        </span>
-      </button>
+          {/* Brass-ringed token avatar */}
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'relative',
+              flexShrink: 0,
+              width: 38,
+              height: 38,
+              borderRadius: '50%',
+              background:
+                `radial-gradient(circle at 30% 25%, ${color} 0%, ${color} 55%, rgba(0,0,0,0.4) 100%)`,
+              boxShadow:
+                '0 0 0 2px #8a6422, 0 0 0 3px #e8c26a, 0 0 0 4px #8a6422,' +
+                'inset 0 1px 3px rgba(255,255,255,0.35), inset 0 -2px 4px rgba(0,0,0,0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.1rem',
+              lineHeight: 1,
+            }}
+          >
+            <span
+              style={{
+                filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.5))',
+              }}
+            >
+              {tokenGlyph}
+            </span>
+          </span>
 
-      <div
-        style={{
-          fontSize: '0.75rem',
-          opacity: 0.8,
-          marginTop: 4,
-          display: 'flex',
-          gap: 8,
-          flexWrap: 'wrap',
-        }}
-        title="Acertos / erros / dicas"
-      >
-        <span>✓ {player.quizStats.correct} acertos</span>
-        <span>✗ {player.quizStats.wrong} erros</span>
-        {player.quizStats.hintsBought > 0 && (
-          <span>💡 {player.quizStats.hintsBought} dicas</span>
-        )}
-      </div>
-      {player.inPrison && (
-        <div style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>Preso</div>
-      )}
+          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.05rem',
+                lineHeight: 1.1,
+                color: 'var(--ink)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                textShadow: '0 1px 0 rgba(250, 226, 160, 0.4)',
+              }}
+            >
+              {player.name}
+            </span>
+            <span
+              className="ind-tabular"
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.15rem',
+                lineHeight: 1.1,
+                color: 'var(--copper)',
+                textShadow: '0 1px 0 rgba(250, 226, 160, 0.4)',
+              }}
+            >
+              R${player.cash}
+            </span>
+          </span>
 
-      {expanded && holdings && (
+          <span
+            aria-hidden="true"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 22,
+              height: 22,
+              borderRadius: 4,
+              background: 'rgba(26,14,6,0.15)',
+              border: '1px solid rgba(26,14,6,0.4)',
+              fontSize: '0.85rem',
+              lineHeight: 1,
+              color: 'rgba(26,14,6,0.9)',
+              transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform var(--motion-fast)',
+              flexShrink: 0,
+            }}
+          >
+            ▸
+          </span>
+        </button>
+
         <div
           style={{
-            marginTop: 8,
-            paddingTop: 8,
-            borderTop: '1px solid rgba(59,43,24,0.25)',
-            fontSize: '0.78rem',
+            fontSize: '0.72rem',
+            color: 'var(--ink-muted)',
+            marginTop: 6,
+            display: 'flex',
+            gap: 10,
+            flexWrap: 'wrap',
           }}
+          title="Acertos / erros / dicas"
         >
-          {holdings.totals.tileCount === 0 ? (
-            <em style={{ opacity: 0.7 }}>Sem aquisições.</em>
-          ) : (
-            <>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginBottom: 6,
-                  opacity: 0.85,
-                }}
-              >
-                <span>{holdings.totals.tileCount} propriedades</span>
-                <span>R${holdings.totals.rentIncome}/turno</span>
-              </div>
-              <div style={{ display: 'grid', gap: 4 }}>
-                {holdings.industriesBySector.map((g) => (
-                  <SectorChip
-                    key={g.sector}
-                    sector={g.sector}
-                    owned={g.tiles.length}
-                    total={g.sectorTotal}
-                    monopoly={g.monopoly}
-                  />
-                ))}
-                {holdings.transports.length > 0 && (
-                  <CategoryChip
-                    icon="🚂"
-                    label="Transportes"
-                    owned={holdings.transports.length}
-                    total={4}
-                  />
-                )}
-                {holdings.utilities.length > 0 && (
-                  <CategoryChip
-                    icon="⚡"
-                    label="Utilidades"
-                    owned={holdings.utilities.length}
-                    total={2}
-                  />
-                )}
-              </div>
-            </>
+          <span>✓ {player.quizStats.correct}</span>
+          <span>✗ {player.quizStats.wrong}</span>
+          {player.quizStats.hintsBought > 0 && (
+            <span>💡 {player.quizStats.hintsBought}</span>
           )}
         </div>
-      )}
+        {player.inPrison && (
+          <div
+            style={{
+              display: 'inline-block',
+              marginTop: 6,
+              fontSize: '0.7rem',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: 'var(--danger)',
+              padding: '2px 8px',
+              border: '1px solid var(--danger)',
+              borderRadius: 3,
+              background: 'rgba(138, 42, 27, 0.1)',
+            }}
+          >
+            Preso
+          </div>
+        )}
 
-      <button
-        onClick={onOpenDetails}
-        style={{
-          marginTop: 8,
-          width: '100%',
-          cursor: 'pointer',
-          fontSize: '0.78rem',
-          padding: '6px 8px',
-          background: 'rgba(59,43,24,0.08)',
-          color: 'rgba(59,43,24,0.95)',
-          border: `1px solid ${color}`,
-          borderRadius: 4,
-          fontFamily: 'var(--font-display)',
-        }}
-      >
-        Ver detalhes (A)
-      </button>
-    </Parchment>
+        {expanded && holdings && (
+          <div
+            style={{
+              marginTop: 10,
+              paddingTop: 10,
+              borderTop: '1px solid rgba(26,14,6,0.3)',
+              fontSize: '0.78rem',
+            }}
+          >
+            {holdings.totals.tileCount === 0 ? (
+              <em style={{ color: 'var(--ink-muted)' }}>Sem aquisições.</em>
+            ) : (
+              <>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginBottom: 8,
+                    color: 'var(--ink-soft)',
+                  }}
+                >
+                  <span>{holdings.totals.tileCount} propriedades</span>
+                  <span className="ind-tabular">R${holdings.totals.rentIncome}/turno</span>
+                </div>
+                <div style={{ display: 'grid', gap: 4 }}>
+                  {holdings.industriesBySector.map((g) => (
+                    <SectorChip
+                      key={g.sector}
+                      sector={g.sector}
+                      owned={g.tiles.length}
+                      total={g.sectorTotal}
+                      monopoly={g.monopoly}
+                    />
+                  ))}
+                  {holdings.transports.length > 0 && (
+                    <CategoryChip
+                      icon="🚂"
+                      label="Transportes"
+                      owned={holdings.transports.length}
+                      total={4}
+                    />
+                  )}
+                  {holdings.utilities.length > 0 && (
+                    <CategoryChip
+                      icon="⚡"
+                      label="Utilidades"
+                      owned={holdings.utilities.length}
+                      total={2}
+                    />
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={onOpenDetails}
+          className="ghost"
+          style={{
+            marginTop: 10,
+            width: '100%',
+            fontSize: '0.82rem',
+            padding: '6px 8px',
+          }}
+        >
+          Ver detalhes (A)
+        </button>
+      </Parchment>
     </div>
   );
 }

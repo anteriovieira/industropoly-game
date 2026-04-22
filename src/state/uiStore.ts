@@ -29,6 +29,10 @@ interface UiStore {
   focusCameraOnTile: (tileId: number) => void;
   diceDragging: boolean;
   setDiceDragging: (dragging: boolean) => void;
+  // Bumped whenever a dice roll starts — used by the 3D scene to trigger a
+  // brief camera zoom-punch ("anticipation"). Not persisted.
+  diceRollNonce: number;
+  bumpDiceRoll: () => void;
 }
 
 export const useUiStore = create<UiStore>((set) => ({
@@ -60,4 +64,6 @@ export const useUiStore = create<UiStore>((set) => ({
     set((s) => ({ cameraFocusTileId: tileId, cameraFocusNonce: s.cameraFocusNonce + 1 })),
   diceDragging: false,
   setDiceDragging: (diceDragging) => set({ diceDragging }),
+  diceRollNonce: 0,
+  bumpDiceRoll: () => set((s) => ({ diceRollNonce: s.diceRollNonce + 1 })),
 }));

@@ -46,10 +46,11 @@ export function QuestionModal() {
     const correct = submitted === question.correctOptionId;
     const correctText = question.options.find((o) => o.id === question.correctOptionId)?.text;
     const accent = correct ? '#1f7a44' : '#a12a1f';
-    const accentSoft = correct ? 'rgba(31, 122, 68, 0.12)' : 'rgba(161, 42, 31, 0.12)';
+    const accentSoft = correct ? 'rgba(31, 122, 68, 0.1)' : 'rgba(161, 42, 31, 0.1)';
     return (
       <Modal
-        title={correct ? 'Resposta correta!' : 'Resposta incorreta'}
+        title={correct ? 'Resposta correta' : 'Resposta incorreta'}
+        label={correct ? 'Veredicto' : 'Veredicto'}
         dismissible={false}
         footer={
           <button
@@ -65,31 +66,26 @@ export function QuestionModal() {
       >
         <div
           style={{
-            padding: '12px 14px',
-            border: `2px solid ${accent}`,
+            padding: '14px 16px',
+            border: `1px solid ${accent}`,
+            borderLeft: `4px solid ${accent}`,
             borderRadius: 8,
             background: accentSoft,
+            boxShadow: 'inset 0 1px 0 rgba(250, 226, 160, 0.2)',
             marginBottom: 14,
           }}
         >
-          <div
-            style={{
-              fontSize: '0.8rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: accent,
-              fontWeight: 700,
-              marginBottom: 4,
-            }}
-          >
+          <div className="ind-label" style={{ color: accent, marginBottom: 4 }}>
             Resposta correta
           </div>
-          <div style={{ fontWeight: 600, fontSize: '1.05rem' }}>{correctText}</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', color: 'var(--ink)' }}>
+            {correctText}
+          </div>
         </div>
         <p
           style={{
-            margin: '0 0 12px',
-            fontWeight: 700,
+            margin: '0 0 14px',
+            fontWeight: 600,
             color: accent,
             fontSize: '1rem',
           }}
@@ -98,18 +94,25 @@ export function QuestionModal() {
         </p>
         <div
           style={{
-            padding: '10px 12px',
-            border: '1px solid rgba(59,43,24,0.35)',
+            padding: '12px 14px',
+            border: '1px solid rgba(26, 14, 6, 0.3)',
+            borderLeft: '3px solid #c9943a',
             borderRadius: 6,
-            background: 'rgba(243, 231, 193, 0.45)',
+            background:
+              'linear-gradient(180deg, rgba(244, 230, 188, 0.55) 0%, rgba(232, 210, 160, 0.45) 100%)',
+            boxShadow: 'inset 0 1px 0 rgba(250, 226, 160, 0.3)',
           }}
         >
-          <div style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: 4 }}>
-            Lembrete
+          <div className="ind-label" style={{ marginBottom: 4 }}>
+            Lembrete · {tile.education.date}
           </div>
-          <strong>{tile.education.title}</strong> — <em>{tile.education.date}</em>
+          <strong style={{ fontFamily: 'var(--font-display)', fontSize: '1.02rem' }}>
+            {tile.education.title}
+          </strong>
           <p style={{ margin: '6px 0' }}>{tile.education.blurb}</p>
-          <small style={{ opacity: 0.75 }}>Fonte: {tile.education.source}</small>
+          <small style={{ color: 'var(--ink-muted)', fontStyle: 'italic' }}>
+            Fonte: {tile.education.source}
+          </small>
         </div>
       </Modal>
     );
@@ -124,7 +127,8 @@ export function QuestionModal() {
 
   return (
     <Modal
-      title={`Pergunta: ${tile.name}`}
+      title={tile.name}
+      label="O Cronista pergunta"
       dismissible={false}
       footer={
         <button
@@ -142,27 +146,28 @@ export function QuestionModal() {
     >
       <p
         style={{
-          fontStyle: 'italic',
-          fontSize: '0.85rem',
-          opacity: 0.7,
-          margin: '0 0 8px',
+          fontFamily: 'var(--font-display)',
+          fontSize: '1.08rem',
+          lineHeight: 1.35,
+          marginBottom: 14,
+          color: 'var(--ink)',
         }}
       >
-        O Cronista pergunta:
+        {question.prompt}
       </p>
-
-      <p style={{ fontWeight: 600, marginBottom: 12 }}>{question.prompt}</p>
 
       {clueTexts.length > 0 && (
         <div
           aria-live="polite"
           style={{
             marginBottom: 12,
-            padding: '8px 12px',
-            background: 'rgba(200, 168, 90, 0.25)',
-            border: '1px dashed rgba(59,43,24,0.5)',
+            padding: '10px 14px',
+            background: 'rgba(232, 194, 106, 0.18)',
+            border: '1px dashed rgba(138, 100, 34, 0.6)',
+            borderLeft: '3px solid #c9943a',
             borderRadius: 6,
             fontStyle: 'italic',
+            color: 'var(--ink-soft)',
           }}
         >
           {clueTexts.map((c, i) => (
@@ -172,12 +177,28 @@ export function QuestionModal() {
       )}
 
       {firstLetterRevealed && firstLetter && (
-        <div aria-live="polite" style={{ marginBottom: 12, fontSize: '0.9rem' }}>
-          Primeira letra da resposta: <strong>{firstLetter}</strong>
+        <div
+          aria-live="polite"
+          style={{
+            marginBottom: 12,
+            fontSize: '0.9rem',
+            color: 'var(--ink-soft)',
+          }}
+        >
+          Primeira letra da resposta:{' '}
+          <strong
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.1rem',
+              color: 'var(--copper)',
+            }}
+          >
+            {firstLetter}
+          </strong>
         </div>
       )}
 
-      <div role="radiogroup" aria-label="Opções de resposta">
+      <div role="radiogroup" aria-label="Opções de resposta" style={{ display: 'grid', gap: 6 }}>
         {question.options.map((opt) => (
           <OptionRow
             key={opt.id}
@@ -189,18 +210,28 @@ export function QuestionModal() {
         ))}
       </div>
 
-      <div style={{ marginTop: 16 }}>
+      <div
+        style={{
+          marginTop: 18,
+          paddingTop: 14,
+          borderTop: '1px solid rgba(26, 14, 6, 0.25)',
+        }}
+      >
         <div
           style={{
-            fontFamily: 'var(--font-display)',
-            marginBottom: 6,
-            fontSize: '0.95rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            marginBottom: 10,
           }}
         >
-          Loja de Dicas
-        </div>
-        <div style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: 8 }}>
-          Cofre: R${p.cash}
+          <span className="ind-label">Loja de Dicas</span>
+          <span
+            className="ind-tabular"
+            style={{ fontSize: '0.85rem', color: 'var(--ink-muted)' }}
+          >
+            Cofre: R${p.cash}
+          </span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {question.hints.map((hint) => (
@@ -238,16 +269,22 @@ function OptionRow({
         display: 'flex',
         alignItems: 'flex-start',
         gap: 10,
-        padding: '8px 10px',
-        marginBottom: 6,
+        padding: '10px 12px',
         border: selected
-          ? '2px solid var(--accent, #a0410d)'
-          : '1px solid rgba(59,43,24,0.4)',
+          ? '1px solid #c9943a'
+          : '1px solid rgba(26, 14, 6, 0.3)',
+        borderLeft: selected ? '3px solid #c9943a' : '1px solid rgba(26, 14, 6, 0.3)',
         borderRadius: 6,
         opacity: eliminated ? 0.45 : 1,
         textDecoration: eliminated ? 'line-through' : 'none',
         cursor: 'pointer',
-        background: selected ? 'rgba(160, 65, 13, 0.08)' : 'transparent',
+        background: selected
+          ? 'linear-gradient(180deg, rgba(232, 194, 106, 0.22) 0%, rgba(201, 148, 58, 0.15) 100%)'
+          : 'rgba(244, 230, 188, 0.25)',
+        boxShadow: selected
+          ? 'inset 0 1px 0 rgba(250, 226, 160, 0.4), 0 1px 3px rgba(10, 6, 2, 0.18)'
+          : 'inset 0 1px 0 rgba(250, 226, 160, 0.2)',
+        transition: 'all var(--motion-fast)',
       }}
     >
       <input

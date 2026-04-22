@@ -6,21 +6,52 @@ export function IntroScreen() {
   const setPhase = useUiStore((s) => s.setPhase);
   return (
     <div
+      className="ind-stage"
       style={{
-        position: 'fixed',
-        inset: 0,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'safe center',
         padding: 24,
         overflow: 'auto',
         WebkitOverflowScrolling: 'touch',
-        background: 'linear-gradient(#1a120a, #342410)',
       }}
     >
-      <Parchment padding={36} style={{ maxWidth: 680, margin: 'auto 0' }}>
-        <h1 style={{ marginTop: 0 }}>Industropoly</h1>
-        <p style={{ fontStyle: 'italic', marginTop: 0 }}>
+      <Parchment
+        padding="40px 44px"
+        framed
+        elevation="hero"
+        style={{ maxWidth: 720, margin: 'auto 0', position: 'relative', zIndex: 1 }}
+      >
+        <div
+          className="ind-label"
+          style={{ marginBottom: 10, textAlign: 'center' }}
+        >
+          Um jogo de tabuleiro sobre a Revolução Industrial
+        </div>
+        <h1 style={{ marginTop: 0, textAlign: 'center', fontSize: 'clamp(2.4rem, 5vw, 3.8rem)' }}>
+          Industropoly
+        </h1>
+        {/* Brass divider */}
+        <div
+          aria-hidden="true"
+          style={{
+            height: 2,
+            margin: '4px auto 18px',
+            width: 180,
+            background:
+              'linear-gradient(90deg, transparent 0%, #8a6422 20%, #e8c26a 50%, #8a6422 80%, transparent 100%)',
+            borderRadius: 2,
+          }}
+        />
+        <p
+          style={{
+            fontStyle: 'italic',
+            marginTop: 0,
+            textAlign: 'center',
+            fontSize: '1.05rem',
+            color: 'var(--ink-soft)',
+          }}
+        >
           Manchester, 1785 — a era do vapor está amanhecendo.
         </p>
         <p>
@@ -47,13 +78,13 @@ export function IntroScreen() {
             justifyContent: 'space-between',
             alignItems: 'center',
             gap: 12,
-            marginTop: 20,
+            marginTop: 28,
             flexWrap: 'wrap',
           }}
         >
           <InstallButton />
-          <button className="primary" onClick={() => setPhase('setup')} autoFocus>
-            Começar
+          <button className="primary hero" onClick={() => setPhase('setup')} autoFocus>
+            Começar &rarr;
           </button>
         </div>
       </Parchment>
