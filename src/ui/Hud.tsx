@@ -204,9 +204,9 @@ export function Hud() {
 
   const rollLabel = canEnd
     ? samePlayerAgain
-      ? `Jogar de novo (E)`
-      : `Jogar → ${nextRoller.name} (E)`
-    : 'Jogar (Espaço)';
+      ? `Dupla! Lançar de novo (E)`
+      : `Encerrar turno (E)`
+    : 'Lançar dados (Espaço)';
 
   // Keep refs in sync each render so the shake listener (attached once per
   // enable/disable cycle) always observes current phase state without needing
