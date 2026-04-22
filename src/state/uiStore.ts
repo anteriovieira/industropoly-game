@@ -1,11 +1,15 @@
 import { create } from 'zustand';
 
-export type Phase = 'boot' | 'intro' | 'setup' | 'game' | 'summary';
+export type Phase = 'boot' | 'intro' | 'setup' | 'online-lobby' | 'online-room' | 'game' | 'summary';
 export type ShadowQuality = 'low' | 'medium' | 'high';
 
 interface UiStore {
   phase: Phase;
   setPhase: (phase: Phase) => void;
+  gameSource: 'local' | 'online';
+  setGameSource: (s: 'local' | 'online') => void;
+  activeRoomId: string | null;
+  setActiveRoomId: (id: string | null) => void;
   hoveredTile: number | null;
   setHoveredTile: (tileId: number | null) => void;
   shadowQuality: ShadowQuality;
@@ -38,6 +42,10 @@ interface UiStore {
 export const useUiStore = create<UiStore>((set) => ({
   phase: 'boot',
   setPhase: (phase) => set({ phase }),
+  gameSource: 'local',
+  setGameSource: (gameSource) => set({ gameSource }),
+  activeRoomId: null,
+  setActiveRoomId: (activeRoomId) => set({ activeRoomId }),
   hoveredTile: null,
   setHoveredTile: (hoveredTile) => set({ hoveredTile }),
   shadowQuality: 'medium',
