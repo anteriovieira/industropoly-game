@@ -45,12 +45,19 @@ export function OnlineGameContainer() {
       if (cancelled) return;
       const startRow = all.find((r) => (r.action as { type: string }).type === 'GAME_START');
       if (!startRow) return;
-      const startAction = startRow.action as unknown as { seed: number; players: { seat_index: number; name: string }[] };
+      const startAction = startRow.action as unknown as {
+        seed: number;
+        players: { seat_index: number; name: string }[];
+        options?: { consolationMoveOnWrong?: boolean };
+      };
       const playersInput = startAction.players
         .slice()
         .sort((a, b) => a.seat_index - b.seat_index)
         .map((p) => ({ name: p.name, token: TOKENS[p.seat_index]! }));
-      onlineStore.getState().initialize(startAction.seed, playersInput);
+      const options = {
+        consolationMoveOnWrong: startAction.options?.consolationMoveOnWrong ?? false,
+      };
+      onlineStore.getState().initialize(startAction.seed, playersInput, options);
       for (const row of all.filter((r) => r.seq > startRow.seq)) {
         onlineStore.getState().applyRemoteAction({ seq: row.seq, action: row.action });
       }

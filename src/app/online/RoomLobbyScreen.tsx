@@ -17,6 +17,7 @@ export function RoomLobbyScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [consolationMoveOnWrong, setConsolationMoveOnWrong] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!roomId) return;
@@ -75,6 +76,7 @@ export function RoomLobbyScreen() {
       await appendAction(roomId, {
         type: 'GAME_START',
         seed,
+        options: { consolationMoveOnWrong },
         players: players.map((p) => ({
           user_id: p.user_id,
           seat_index: p.seat_index!,
@@ -151,6 +153,36 @@ export function RoomLobbyScreen() {
                 <li key={s.user_id}>{s.nickname}</li>
               ))}
           </ul>
+        </>
+      )}
+
+      {isHost && (
+        <>
+          <h2 style={{ marginBottom: 8 }}>Configurações</h2>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 10,
+              fontSize: '0.9rem',
+              color: 'var(--ink-soft)',
+              cursor: 'pointer',
+              marginBottom: 8,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={consolationMoveOnWrong}
+              onChange={(e) => setConsolationMoveOnWrong(e.target.checked)}
+              style={{ marginTop: 4 }}
+            />
+            <span>
+              Avançar uma casa ao errar a pergunta
+              <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
+                Se desligado, quem erra fica parado e termina o turno.
+              </span>
+            </span>
+          </label>
         </>
       )}
 

@@ -1,4 +1,5 @@
-import type { GameState, Player, PlayerId, TileOwnership, TokenKind } from './types';
+import type { GameOptions, GameState, Player, PlayerId, TileOwnership, TokenKind } from './types';
+import { DEFAULT_GAME_OPTIONS } from './types';
 import { normalizeSeed, shuffle } from './rng';
 import { pickIssue } from './reducer';
 import { TILES } from '@/content/tiles';
@@ -13,7 +14,11 @@ export interface InitialPlayerInput {
 const PLAYER_IDS: readonly PlayerId[] = ['p1', 'p2', 'p3', 'p4'] as const;
 const STARTING_CASH = 1500;
 
-export function createInitialState(players: InitialPlayerInput[], seed: number): GameState {
+export function createInitialState(
+  players: InitialPlayerInput[],
+  seed: number,
+  options: GameOptions = DEFAULT_GAME_OPTIONS,
+): GameState {
   if (players.length < 2 || players.length > 4) {
     throw new Error('Industropoly requires 2–4 players');
   }
@@ -58,6 +63,7 @@ export function createInitialState(players: InitialPlayerInput[], seed: number):
   return {
     schemaVersion: 2,
     seed: rngSeed,
+    options,
     rngState: issue.state,
     turn: 1,
     activePlayerIndex: 0,

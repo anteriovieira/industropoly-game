@@ -1,6 +1,6 @@
 import { reducer } from '@/engine/reducer';
 import { createInitialState, type InitialPlayerInput } from '@/engine/init';
-import type { Action, GameState } from '@/engine/types';
+import type { Action, GameOptions, GameState } from '@/engine/types';
 
 export interface LoggedAction {
   seq: number;
@@ -12,8 +12,8 @@ export class ActionLog {
   lastSeq: number = 0;
   private buffer = new Map<number, Action>();
 
-  constructor(seed: number, players: InitialPlayerInput[]) {
-    this.state = createInitialState(players, seed);
+  constructor(seed: number, players: InitialPlayerInput[], options?: GameOptions) {
+    this.state = createInitialState(players, seed, options);
   }
 
   apply(entry: LoggedAction): void {
@@ -32,8 +32,9 @@ export class ActionLog {
     seed: number,
     players: InitialPlayerInput[],
     actions: LoggedAction[],
+    options?: GameOptions,
   ): ActionLog {
-    const log = new ActionLog(seed, players);
+    const log = new ActionLog(seed, players, options);
     const sorted = [...actions].sort((a, b) => a.seq - b.seq);
     for (const a of sorted) log.apply(a);
     return log;

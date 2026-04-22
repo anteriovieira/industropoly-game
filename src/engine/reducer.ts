@@ -481,14 +481,25 @@ function handleAnswerQuestion(state: GameState, optionId: string): GameState {
     return performRoll({ ...s, currentQuiz: null });
   }
 
-  // Wrong answer: reset doublesStreak and apply a consolation move —
-  // the player advances CONSOLATION_MOVE_STEPS tile(s) forward (banking the
-  // pass-start bonus if they cross Manchester) and then resolves the landing
-  // so cards, taxes and rents still fire. The one exception is an unowned
-  // industry/transport/utility: we skip its buy offer (otherwise missing a
-  // quiz would turn into a purchase opportunity).
+  // Wrong answer: reset doublesStreak.
   s = updateActivePlayer(s, (pl) => ({ ...pl, doublesStreak: 0 }));
-  return applyConsolationMove({ ...s, currentQuiz: null, modal: null });
+
+  // Optional consolation move — configured at game start, default off.
+  // When off (default), the player stays parked and the turn ends.
+  // When on, they advance CONSOLATION_MOVE_STEPS tile(s) and resolve the
+  // landing (minus the buy offer on unowned purchasable tiles).
+  if (s.options?.consolationMoveOnWrong) {
+    return applyConsolationMove({ ...s, currentQuiz: null, modal: null });
+  }
+  s = appendLog(s, `${selActive(s).name} ficou parado na casa.`);
+  return {
+    ...s,
+    currentQuiz: null,
+    modal: null,
+    lastRoll: null,
+    turnPhase: 'awaiting-end-turn',
+    pendingLandingResolved: true,
+  };
 }
 
 // Moves the active player CONSOLATION_MOVE_STEPS forward (with pass-start

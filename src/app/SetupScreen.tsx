@@ -26,6 +26,7 @@ export function SetupScreen() {
   const newGame = useGameStore((s) => s.newGame);
   const setPhase = useUiStore((s) => s.setPhase);
   const [count, setCount] = useState(2);
+  const [consolationMoveOnWrong, setConsolationMoveOnWrong] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([
     { name: 'Jogador 1', token: 'locomotive' },
     { name: 'Jogador 2', token: 'top-hat' },
@@ -48,7 +49,11 @@ export function SetupScreen() {
 
   function start(): void {
     if (!valid) return;
-    newGame(effective.map((d) => ({ name: d.name.trim(), token: d.token as TokenKind })));
+    newGame(
+      effective.map((d) => ({ name: d.name.trim(), token: d.token as TokenKind })),
+      undefined,
+      { consolationMoveOnWrong },
+    );
     setPhase('game');
   }
 
@@ -131,6 +136,29 @@ export function SetupScreen() {
               ))}
             </div>
           </div>
+
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: '0.9rem',
+              color: 'var(--ink-soft)',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={consolationMoveOnWrong}
+              onChange={(e) => setConsolationMoveOnWrong(e.target.checked)}
+            />
+            <span>
+              Avançar uma casa ao errar a pergunta
+              <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
+                Se desligado, quem erra fica parado e termina o turno.
+              </span>
+            </span>
+          </label>
         </header>
 
         {/* Player cards */}

@@ -1,6 +1,6 @@
 import { create, type StoreApi } from 'zustand';
 import { toast } from 'sonner';
-import type { Action, GameState } from '@/engine/types';
+import type { Action, GameOptions, GameState } from '@/engine/types';
 import type { InitialPlayerInput } from '@/engine/init';
 import { ActionLog, type LoggedAction } from './actionLog';
 
@@ -24,7 +24,7 @@ function extractErrorMessage(err: unknown): string {
 export interface OnlineGameStore {
   state: GameState | null;
   lastSeq: number;
-  initialize: (seed: number, players: InitialPlayerInput[]) => void;
+  initialize: (seed: number, players: InitialPlayerInput[], options?: GameOptions) => void;
   dispatch: (action: Action) => void;
   applyRemoteAction: (entry: LoggedAction) => void;
   reset: () => void;
@@ -41,8 +41,8 @@ export function createOnlineGameStore(deps: OnlineGameStoreDeps): StoreApi<Onlin
     state: null,
     lastSeq: 0,
 
-    initialize(seed, players) {
-      log = new ActionLog(seed, players);
+    initialize(seed, players, options) {
+      log = new ActionLog(seed, players, options);
       set({ state: log.state, lastSeq: 0 });
     },
 

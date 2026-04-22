@@ -204,9 +204,26 @@ export interface JournalEntry {
   answerOutcome?: 'correct' | 'wrong';
 }
 
+export interface GameOptions {
+  /**
+   * When true, a wrong quiz answer advances the player one tile forward
+   * (banking the pass-start bonus) before resolving the landing. When false
+   * (default), a wrong answer leaves the token parked and ends the turn
+   * immediately. Configured at game start.
+   */
+  consolationMoveOnWrong: boolean;
+}
+
+export const DEFAULT_GAME_OPTIONS: GameOptions = {
+  consolationMoveOnWrong: false,
+};
+
 export interface GameState {
   schemaVersion: 2;
   seed: number;
+  /** Optional so pre-existing saves deserialise cleanly; reducer treats
+   *  missing fields as DEFAULT_GAME_OPTIONS. */
+  options?: GameOptions;
   rngState: number;
   turn: number; // turn counter (increments on END_TURN)
   activePlayerIndex: number;
