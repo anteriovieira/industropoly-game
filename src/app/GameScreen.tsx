@@ -17,6 +17,7 @@ import { AcquisitionsModal } from '@/ui/modals/AcquisitionsModal';
 import { HistoryModal } from '@/ui/modals/HistoryModal';
 import { CameraHint } from '@/ui/CameraHint';
 import { TileTooltip } from '@/ui/TileTooltip';
+import { useIsMyTurn } from '@/ui/hud/useIsMyTurn';
 import { activePlayer } from '@/engine/selectors';
 import { save } from '@/lib/persist';
 import { useGameAudio } from '@/lib/audioSideEffects';
@@ -28,6 +29,7 @@ import {
 } from '@/scene/animTiming';
 
 export function GameScreen() {
+  const isMyTurn = useIsMyTurn();
   const state = useGameStore((s) => s.state);
   const dispatch = useGameStore((s) => s.dispatch);
   const setPhase = useUiStore((s) => s.setPhase);
@@ -152,6 +154,9 @@ export function GameScreen() {
   if (!state) return null;
   const m = state.modal;
   const inPrisonActive = activePlayer(state).inPrison && state.turnPhase === 'awaiting-roll';
+  // In online mode, only the active player sees turn-action modals. Other
+  // clients see a read-only status overlay (rendered by OnlineGameContainer).
+  const showTurnModals = isMyTurn;
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
@@ -164,14 +169,14 @@ export function GameScreen() {
       <TileTooltip />
       <GameToaster />
       <CameraHint />
-      {state.turnPhase === 'awaiting-quiz-answer' && state.currentQuiz && <QuestionModal />}
-      {m?.kind === 'tile-info' && state.turnPhase !== 'awaiting-quiz-answer' && (
+      {showTurnModals && state.turnPhase === 'awaiting-quiz-answer' && state.currentQuiz && <QuestionModal />}
+      {showTurnModals && m?.kind === 'tile-info' && state.turnPhase !== 'awaiting-quiz-answer' && (
         <TileInfoModal tileId={m.tileId} readOnly={m.readOnly ?? false} />
       )}
-      {m?.kind === 'card' && <CardModal cardId={m.cardId} />}
-      {m?.kind === 'rent' && <RentModal tileId={m.tileId} owed={m.owed} />}
-      {m?.kind === 'tax' && <TaxModal tileId={m.tileId} owed={m.owed} />}
-      {inPrisonActive && <PrisonModal />}
+      {showTurnModals && m?.kind === 'card' && <CardModal cardId={m.cardId} />}
+      {showTurnModals && m?.kind === 'rent' && <RentModal tileId={m.tileId} owed={m.owed} />}
+      {showTurnModals && m?.kind === 'tax' && <TaxModal tileId={m.tileId} owed={m.owed} />}
+      {showTurnModals && inPrisonActive && <PrisonModal />}
       {journalOpen && <FactsJournal />}
       {storyOpen && <StoryModal />}
       {acquisitionsOpen && <AcquisitionsModal />}

@@ -8,6 +8,7 @@ import { useGameStore } from '@/state/gameStore';
 import { GameScreen } from '../GameScreen';
 import { EmoteTray } from '@/ui/hud/EmoteTray';
 import { ConnectionBanner } from '@/ui/hud/ConnectionBanner';
+import { OtherPlayerActingOverlay } from '@/ui/hud/OtherPlayerActingOverlay';
 import type { GameActionRow, RoomMemberRow, BroadcastEvent } from '@/realtime/types';
 import type { Action, TokenKind } from '@/engine/types';
 
@@ -61,6 +62,11 @@ export function OnlineGameContainer() {
   }, [roomId, bootstrapped, members, onlineStore, loadGameState]);
 
   const seatIndex = members.find((m) => m.user_id === userId)?.seat_index ?? null;
+  const setMySeatIndex = useUiStore((s) => s.setMySeatIndex);
+  useEffect(() => {
+    setMySeatIndex(seatIndex);
+    return () => setMySeatIndex(null);
+  }, [seatIndex, setMySeatIndex]);
 
   const [incoming, setIncoming] = useState<{ userId: string; emoji: string; key: number } | null>(null);
   const broadcastRef = useRef<((ev: BroadcastEvent) => void) | null>(null);
@@ -129,6 +135,7 @@ export function OnlineGameContainer() {
     <>
       <ConnectionBanner connected={channel.connected} />
       <GameScreen />
+      <OtherPlayerActingOverlay />
       <EmoteTray
         send={(ev) => broadcastRef.current?.({ ...ev, userId: userId ?? '' })}
         incoming={incoming}

@@ -10,6 +10,8 @@ interface UiStore {
   setGameSource: (s: 'local' | 'online') => void;
   activeRoomId: string | null;
   setActiveRoomId: (id: string | null) => void;
+  mySeatIndex: number | null;
+  setMySeatIndex: (i: number | null) => void;
   hoveredTile: number | null;
   setHoveredTile: (tileId: number | null) => void;
   shadowQuality: ShadowQuality;
@@ -46,6 +48,8 @@ export const useUiStore = create<UiStore>((set) => ({
   setGameSource: (gameSource) => set({ gameSource }),
   activeRoomId: null,
   setActiveRoomId: (activeRoomId) => set({ activeRoomId }),
+  mySeatIndex: null,
+  setMySeatIndex: (mySeatIndex) => set({ mySeatIndex }),
   hoveredTile: null,
   setHoveredTile: (hoveredTile) => set({ hoveredTile }),
   shadowQuality: 'medium',

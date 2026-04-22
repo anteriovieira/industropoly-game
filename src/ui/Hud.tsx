@@ -8,6 +8,7 @@ import { Modal } from './modals/Modal';
 import { HudMenu } from './HudMenu';
 import { useDraggable, type DraggablePos } from './useDraggable';
 import { activePlayer, playerHoldings } from '@/engine/selectors';
+import { useIsMyTurn as isMyTurnFn } from './hud/useIsMyTurn';
 import { audio } from '@/lib/audio';
 import { clear as clearSave } from '@/lib/persist';
 import {
@@ -161,11 +162,9 @@ export function Hud() {
   if (!state) return null;
   const active = activePlayer(state);
   const phase = state.turnPhase;
-  const inQuiz = phase === 'awaiting-quiz-answer';
-  const canRoll = phase === 'awaiting-roll' && !active.inPrison;
-  const canResolveMove = phase === 'moving' && !inQuiz;
-  const canLand = phase === 'awaiting-land-action';
-  const canEnd = phase === 'awaiting-end-turn' && state.pendingLandingResolved;
+  const isMyTurn = isMyTurnFn();
+  const canRoll = isMyTurn && phase === 'awaiting-roll' && !active.inPrison;
+  const canEnd = isMyTurn && phase === 'awaiting-end-turn' && state.pendingLandingResolved;
   const canInfo = (phase === 'awaiting-roll' || phase === 'awaiting-end-turn') && !state.modal;
 
   // Who rolls next after the current turn ends. Respects the doubles rule:
@@ -399,15 +398,6 @@ export function Hud() {
         >
           <span aria-hidden="true" style={{ marginRight: 8, fontSize: '1.1em' }}>🎲</span>
           {rollLabel}
-        </button>
-        <button
-          disabled={!canResolveMove}
-          onClick={() => dispatch({ type: 'RESOLVE_MOVEMENT' })}
-        >
-          Mover
-        </button>
-        <button disabled={!canLand} onClick={() => dispatch({ type: 'RESOLVE_LANDING' })}>
-          Resolver casa
         </button>
         <button
           disabled={!canInfo}
