@@ -53,24 +53,26 @@ export function GameScreen() {
   // Auto-advance the moving -> awaiting-land-action -> landing pipeline.
   // The delays are tuned so the player actually *sees* the dice tumble and the
   // token hop every tile before any modal appears on top of the scene.
+  //
+  // Online: only the active player's client dispatches. Others' dispatches would
+  // be rejected by the "not your turn" RLS check — avoid the noise.
   useEffect(() => {
     if (!state) return;
+    if (!isMyTurn) return;
     const reduced = prefersReducedMotion();
     if (state.turnPhase === 'moving') {
-      // Wait for the dice tumble to settle before applying the movement to state.
       const delay = reduced ? 200 : DICE_TUMBLE_MS + DICE_SETTLE_BUFFER_MS;
       const t = setTimeout(() => dispatch({ type: 'RESOLVE_MOVEMENT' }), delay);
       return () => clearTimeout(t);
     }
     if (state.turnPhase === 'awaiting-land-action') {
-      // Wait for the token to actually finish hopping across every tile.
       const steps = state.lastRoll?.total ?? 0;
       const delay = landingDelayMs(steps, reduced);
       const t = setTimeout(() => dispatch({ type: 'RESOLVE_LANDING' }), delay);
       return () => clearTimeout(t);
     }
     return undefined;
-  }, [state, dispatch]);
+  }, [state, dispatch, isMyTurn]);
 
   // Keyboard shortcuts.
   useEffect(() => {

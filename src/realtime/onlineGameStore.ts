@@ -1,7 +1,12 @@
 import { create, type StoreApi } from 'zustand';
+import { toast } from 'sonner';
 import type { Action, GameState } from '@/engine/types';
 import type { InitialPlayerInput } from '@/engine/init';
 import { ActionLog, type LoggedAction } from './actionLog';
+
+// Harmless server rejections to silence (e.g. non-active players' auto-dispatches
+// are rejected by the "not your turn" check and we don't want a toast for each).
+const IGNORED_ERROR_PATTERNS = ['not your turn', 'not a member', 'room is not in_game'];
 
 export interface OnlineGameStore {
   state: GameState | null;
@@ -30,7 +35,11 @@ export function createOnlineGameStore(deps: OnlineGameStoreDeps): StoreApi<Onlin
 
     dispatch(action) {
       void deps.append(action).catch((err) => {
-        console.error('append_action failed', err);
+        console.error('append_action failed', action, err);
+        const message =
+          err instanceof Error ? err.message : typeof err === 'string' ? err : 'Ação rejeitada pelo servidor';
+        if (IGNORED_ERROR_PATTERNS.some((p) => message.toLowerCase().includes(p))) return;
+        toast.error(message);
       });
     },
 
