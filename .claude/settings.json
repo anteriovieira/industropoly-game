@@ -18,7 +18,11 @@
       "Bash(socat TCP-LISTEN:5858,bind=0.0.0.0,reuseaddr,fork TCP:127.0.0.1:5858)",
       "Bash(curl -s http://127.0.0.1:5858/health)",
       "Bash(npx eslint *)",
-      "Bash(agent-browser press *)"
+      "Bash(agent-browser press *)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --msg-filter 'sed \"/^Co-Authored-By: Claude/d\"' HEAD~4..HEAD)",
+      "Bash(kill 29568 29581)",
+      "Bash(lsof -nP -iTCP:5173 -sTCP:LISTEN)",
+      "Bash(lsof -nP -iTCP:4173 -sTCP:LISTEN)"
     ],
     "additionalDirectories": [
       "/Users/anteriovieira/.claude/plugins/local-plugins/frontend-log-bridge"

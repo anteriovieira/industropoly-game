@@ -8,6 +8,7 @@ import { Modal } from './modals/Modal';
 import { HudMenu } from './HudMenu';
 import { useDraggable, type DraggablePos } from './useDraggable';
 import { activePlayer, playerHoldings } from '@/engine/selectors';
+import { useIsMyTurn as isMyTurnFn } from './hud/useIsMyTurn';
 import { audio } from '@/lib/audio';
 import { clear as clearSave } from '@/lib/persist';
 import {
@@ -82,7 +83,6 @@ export function Hud() {
   const setPhase = useUiStore((s) => s.setPhase);
   const setNotice = useUiStore((s) => s.setNotice);
   const resetCamera = useUiStore((s) => s.resetCamera);
-  const bumpDiceRoll = useUiStore((s) => s.bumpDiceRoll);
   const [confirmingQuit, setConfirmingQuit] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<PlayerId>>(new Set());
   const [shakeEnabled, setShakeEnabled] = useState<boolean>(loadShakePref);
@@ -161,12 +161,9 @@ export function Hud() {
   if (!state) return null;
   const active = activePlayer(state);
   const phase = state.turnPhase;
-  const inQuiz = phase === 'awaiting-quiz-answer';
-  const canRoll = phase === 'awaiting-roll' && !active.inPrison;
-  const canResolveMove = phase === 'moving' && !inQuiz;
-  const canLand = phase === 'awaiting-land-action';
-  const canEnd = phase === 'awaiting-end-turn' && state.pendingLandingResolved;
-  const canInfo = (phase === 'awaiting-roll' || phase === 'awaiting-end-turn') && !state.modal;
+  const isMyTurn = isMyTurnFn();
+  const canRoll = isMyTurn && phase === 'awaiting-roll' && !active.inPrison;
+  const canEnd = isMyTurn && phase === 'awaiting-end-turn' && state.pendingLandingResolved;
 
   // Who rolls next after the current turn ends. Respects the doubles rule:
   // on an unbroken doubles streak (not in prison, streak < 3), the same
@@ -193,24 +190,23 @@ export function Hud() {
   function handleRoll(): void {
     if (canEnd) {
       dispatch({ type: 'END_TURN' });
-      // After END_TURN the next roller is the active player. Auto-roll for
-      // them unless they're in prison — in that case the reducer would
-      // reject ROLL_DICE and the prison-decision UI takes over.
-      if (!nextRoller.inPrison) {
-        bumpDiceRoll();
+      // Hot-seat: auto-roll for the next player (same device). Online: the next
+      // player is on another device and will roll themselves — also, firing
+      // ROLL_DICE here would race the server turn handover.
+      const isOnline = useUiStore.getState().gameSource === 'online';
+      if (!isOnline && !nextRoller.inPrison) {
         dispatch({ type: 'ROLL_DICE' });
       }
     } else if (canRoll) {
-      bumpDiceRoll();
       dispatch({ type: 'ROLL_DICE' });
     }
   }
 
   const rollLabel = canEnd
     ? samePlayerAgain
-      ? `Jogar de novo (E)`
-      : `Jogar → ${nextRoller.name} (E)`
-    : 'Jogar (Espaço)';
+      ? `Dupla! Lançar de novo (E)`
+      : `Encerrar turno (E)`
+    : 'Lançar dados (Espaço)';
 
   // Keep refs in sync each render so the shake listener (attached once per
   // enable/disable cycle) always observes current phase state without needing
@@ -399,26 +395,6 @@ export function Hud() {
         >
           <span aria-hidden="true" style={{ marginRight: 8, fontSize: '1.1em' }}>🎲</span>
           {rollLabel}
-        </button>
-        <button
-          disabled={!canResolveMove}
-          onClick={() => dispatch({ type: 'RESOLVE_MOVEMENT' })}
-        >
-          Mover
-        </button>
-        <button disabled={!canLand} onClick={() => dispatch({ type: 'RESOLVE_LANDING' })}>
-          Resolver casa
-        </button>
-        <button
-          disabled={!canInfo}
-          onClick={() => {
-            audio.play('click');
-            dispatch({ type: 'OPEN_TILE_INFO', tileId: active.position });
-          }}
-          aria-label="Ver casa atual (I)"
-          title="Ver casa atual (I)"
-        >
-          <span aria-hidden="true" style={{ marginRight: 6 }}>📜</span>Info (I)
         </button>
       </div>
 

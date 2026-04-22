@@ -14,6 +14,16 @@ function mkState(seed = 1, tokens: TokenKind[] = ['locomotive', 'top-hat']): Gam
   );
 }
 
+// Variant that enables the optional consolation-move rule. Default is OFF;
+// these tests were authored when consolation was the implicit behaviour.
+function mkStateWithConsolation(seed = 1, tokens: TokenKind[] = ['locomotive', 'top-hat']): GameState {
+  return createInitialState(
+    tokens.map((t, i) => ({ name: `P${i + 1}`, token: t })),
+    seed,
+    { consolationMoveOnWrong: true },
+  );
+}
+
 describe('engine init', () => {
   it('rejects <2 or >4 players', () => {
     expect(() =>
@@ -238,7 +248,7 @@ describe('engine quiz flow', () => {
   });
 
   it('wrong answer grants a 1-tile consolation move, clears lastRoll, ends turn', () => {
-    let s = mkState();
+    let s = mkStateWithConsolation();
     // Park on tile 19 so the consolation move lands on tile 20 (Praça Pública,
     // a corner with no landing effect) — keeps the assertion about ending the
     // turn clean.
@@ -252,6 +262,20 @@ describe('engine quiz flow', () => {
     expect(s.players[0]!.quizStats.wrong).toBe(1);
     expect(s.players[0]!.doublesStreak).toBe(0);
     expect(s.players[0]!.correctAnswerStreak).toBe(0);
+  });
+
+  it('wrong answer with default options (consolation OFF) keeps player parked and ends the turn', () => {
+    let s = mkState();
+    s = enterQuizAt(s, 19);
+    const posBefore = s.players[0]!.position;
+    const cashBefore = s.players[0]!.cash;
+    s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
+    expect(s.turnPhase).toBe('awaiting-end-turn');
+    expect(s.lastRoll).toBeNull();
+    expect(s.players[0]!.position).toBe(posBefore);
+    expect(s.players[0]!.cash).toBe(cashBefore);
+    expect(s.players[0]!.quizStats.wrong).toBe(1);
+    expect(s.pendingLandingResolved).toBe(true);
   });
 
   it('correct answer on a parked owned-industry tile lets player move on (rent applies only at the destination)', () => {
@@ -269,7 +293,7 @@ describe('engine quiz flow', () => {
   });
 
   it('consolation landing on an unowned industry does NOT trigger the buy offer', () => {
-    let s = mkState();
+    let s = mkStateWithConsolation();
     // Tile 7 is a card tile; the consolation move lands on tile 8 (Soho de
     // Boulton — an unowned industry). The buy offer must be suppressed so a
     // wrong answer cannot become a shopping opportunity.
@@ -284,7 +308,7 @@ describe('engine quiz flow', () => {
   });
 
   it('consolation landing on an owned industry charges the rent', () => {
-    let s = mkState();
+    let s = mkStateWithConsolation();
     // Tile 8 is an industry. Give it to p2, then park p1 on tile 7 (card) so
     // the consolation move drifts p1 onto tile 8 — rent must still apply.
     s = { ...s, tiles: { ...s.tiles, [8]: { owner: 'p2', tier: 0, mortgaged: false } } };
@@ -297,7 +321,7 @@ describe('engine quiz flow', () => {
   });
 
   it('wrong answer parked on a card tile does NOT draw that tile\'s card (quiz gate held)', () => {
-    let s = mkState();
+    let s = mkStateWithConsolation();
     s = enterQuizAt(s, 7); // invention card tile
     const before = s.decks.invention.draw.length;
     s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });
@@ -310,7 +334,7 @@ describe('engine quiz flow', () => {
   });
 
   it('consolation landing on a card tile draws a card (quiz was on the origin tile)', () => {
-    let s = mkState();
+    let s = mkStateWithConsolation();
     // Park on tile 6 (industry) so the consolation move lands on tile 7
     // (invention card). The origin quiz was Cartwright's, not the card tile's
     // — so landing on tile 7 correctly draws from the invention deck.
@@ -457,7 +481,7 @@ describe('engine quiz flow', () => {
   });
 
   it('consolation move past the start tile awards the pass-start bonus', () => {
-    let s = mkState();
+    let s = mkStateWithConsolation();
     // Park on tile 39 (the last tile before Manchester/Start at tile 0).
     s = enterQuizAt(s, 39);
     const cashBefore = s.players[0]!.cash;
@@ -467,7 +491,7 @@ describe('engine quiz flow', () => {
   });
 
   it('consolation move landing on go-to-prison still sends the player to jail', () => {
-    let s = mkState();
+    let s = mkStateWithConsolation();
     // Tile 29 → consolation move puts player on tile 30 (go-to-prison corner).
     s = enterQuizAt(s, 29);
     s = reducer(s, { type: 'ANSWER_QUESTION', optionId: wrongOptionFor(s) });

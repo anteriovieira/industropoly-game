@@ -222,7 +222,6 @@ export function BoardScene() {
       <Tokens />
       <Dice />
       <CameraIdleDrift controls={controls} />
-      <RollAnticipation />
 
       {/* Post-processing — adds the cinematic polish that pushes the scene
           from "rendered model" to "production game". Skipped on coarse-pointer
@@ -371,41 +370,6 @@ function CameraIdleDrift({ controls }: { controls: React.MutableRefObject<any> }
     cam.position.z = t.z + Math.sin(a) * b.radius;
     cam.position.y = b.y + Math.sin(phase * 0.7) * 0.12;
     cam.lookAt(t);
-  });
-  return null;
-}
-
-// Dice-roll anticipation: a short FOV punch when a roll starts. Operating on
-// fov — not position — avoids fighting MapControls, and the dolly-in feel
-// reads as "the room tightens around the throw". Eases back over 600ms.
-const ROLL_PUNCH_FOV = 3.2;
-const ROLL_PUNCH_MS = 600;
-function RollAnticipation() {
-  const rollNonce = useUiStore((s) => s.diceRollNonce);
-  const startAt = useRef<number | null>(null);
-  const lastNonce = useRef(rollNonce);
-  const baselineFov = useRef<number | null>(null);
-  useFrame(({ camera }) => {
-    if (!(camera instanceof THREE.PerspectiveCamera)) return;
-    if (rollNonce !== lastNonce.current) {
-      lastNonce.current = rollNonce;
-      startAt.current = performance.now();
-      baselineFov.current = camera.fov;
-    }
-    if (startAt.current == null || baselineFov.current == null) return;
-    const elapsed = performance.now() - startAt.current;
-    if (elapsed > ROLL_PUNCH_MS) {
-      camera.fov = baselineFov.current;
-      camera.updateProjectionMatrix();
-      startAt.current = null;
-      baselineFov.current = null;
-      return;
-    }
-    const t = elapsed / ROLL_PUNCH_MS;
-    // Peak at 25% of the animation, then ease back — anticipation, not just a zoom.
-    const curve = t < 0.25 ? t / 0.25 : 1 - (t - 0.25) / 0.75;
-    camera.fov = baselineFov.current - curve * ROLL_PUNCH_FOV;
-    camera.updateProjectionMatrix();
   });
   return null;
 }

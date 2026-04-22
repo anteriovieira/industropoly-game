@@ -17,6 +17,7 @@ import { AcquisitionsModal } from '@/ui/modals/AcquisitionsModal';
 import { HistoryModal } from '@/ui/modals/HistoryModal';
 import { CameraHint } from '@/ui/CameraHint';
 import { TileTooltip } from '@/ui/TileTooltip';
+import { useIsMyTurn } from '@/ui/hud/useIsMyTurn';
 import { activePlayer } from '@/engine/selectors';
 import { save } from '@/lib/persist';
 import { useGameAudio } from '@/lib/audioSideEffects';
@@ -28,6 +29,7 @@ import {
 } from '@/scene/animTiming';
 
 export function GameScreen() {
+  const isMyTurn = useIsMyTurn();
   const state = useGameStore((s) => s.state);
   const dispatch = useGameStore((s) => s.dispatch);
   const setPhase = useUiStore((s) => s.setPhase);
@@ -51,24 +53,26 @@ export function GameScreen() {
   // Auto-advance the moving -> awaiting-land-action -> landing pipeline.
   // The delays are tuned so the player actually *sees* the dice tumble and the
   // token hop every tile before any modal appears on top of the scene.
+  //
+  // Online: only the active player's client dispatches. Others' dispatches would
+  // be rejected by the "not your turn" RLS check — avoid the noise.
   useEffect(() => {
     if (!state) return;
+    if (!isMyTurn) return;
     const reduced = prefersReducedMotion();
     if (state.turnPhase === 'moving') {
-      // Wait for the dice tumble to settle before applying the movement to state.
       const delay = reduced ? 200 : DICE_TUMBLE_MS + DICE_SETTLE_BUFFER_MS;
       const t = setTimeout(() => dispatch({ type: 'RESOLVE_MOVEMENT' }), delay);
       return () => clearTimeout(t);
     }
     if (state.turnPhase === 'awaiting-land-action') {
-      // Wait for the token to actually finish hopping across every tile.
       const steps = state.lastRoll?.total ?? 0;
       const delay = landingDelayMs(steps, reduced);
       const t = setTimeout(() => dispatch({ type: 'RESOLVE_LANDING' }), delay);
       return () => clearTimeout(t);
     }
     return undefined;
-  }, [state, dispatch]);
+  }, [state, dispatch, isMyTurn]);
 
   // Keyboard shortcuts.
   useEffect(() => {
@@ -80,7 +84,6 @@ export function GameScreen() {
       const p = activePlayer(state);
       if (e.code === 'Space' && state.turnPhase === 'awaiting-roll' && !p.inPrison) {
         e.preventDefault();
-        useUiStore.getState().bumpDiceRoll();
         dispatch({ type: 'ROLL_DICE' });
       } else if (
         (e.key.toLowerCase() === 'e' || e.code === 'Space') &&
@@ -105,8 +108,8 @@ export function GameScreen() {
         }
         const next = state.players[nextIdx]!;
         dispatch({ type: 'END_TURN' });
-        if (!next.inPrison) {
-          useUiStore.getState().bumpDiceRoll();
+        const isOnline = useUiStore.getState().gameSource === 'online';
+        if (!isOnline && !next.inPrison) {
           dispatch({ type: 'ROLL_DICE' });
         }
       } else if (e.key.toLowerCase() === 'b' && state.modal?.kind === 'tile-info') {
@@ -152,6 +155,9 @@ export function GameScreen() {
   if (!state) return null;
   const m = state.modal;
   const inPrisonActive = activePlayer(state).inPrison && state.turnPhase === 'awaiting-roll';
+  // In online mode, only the active player sees turn-action modals. Other
+  // clients see a read-only status overlay (rendered by OnlineGameContainer).
+  const showTurnModals = isMyTurn;
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
@@ -164,14 +170,14 @@ export function GameScreen() {
       <TileTooltip />
       <GameToaster />
       <CameraHint />
-      {state.turnPhase === 'awaiting-quiz-answer' && state.currentQuiz && <QuestionModal />}
-      {m?.kind === 'tile-info' && state.turnPhase !== 'awaiting-quiz-answer' && (
+      {showTurnModals && state.turnPhase === 'awaiting-quiz-answer' && state.currentQuiz && <QuestionModal />}
+      {showTurnModals && m?.kind === 'tile-info' && state.turnPhase !== 'awaiting-quiz-answer' && (
         <TileInfoModal tileId={m.tileId} readOnly={m.readOnly ?? false} />
       )}
-      {m?.kind === 'card' && <CardModal cardId={m.cardId} />}
-      {m?.kind === 'rent' && <RentModal tileId={m.tileId} owed={m.owed} />}
-      {m?.kind === 'tax' && <TaxModal tileId={m.tileId} owed={m.owed} />}
-      {inPrisonActive && <PrisonModal />}
+      {showTurnModals && m?.kind === 'card' && <CardModal cardId={m.cardId} />}
+      {showTurnModals && m?.kind === 'rent' && <RentModal tileId={m.tileId} owed={m.owed} />}
+      {showTurnModals && m?.kind === 'tax' && <TaxModal tileId={m.tileId} owed={m.owed} />}
+      {showTurnModals && inPrisonActive && <PrisonModal />}
       {journalOpen && <FactsJournal />}
       {storyOpen && <StoryModal />}
       {acquisitionsOpen && <AcquisitionsModal />}

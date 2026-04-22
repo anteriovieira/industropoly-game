@@ -4,6 +4,7 @@ import { InstallButton } from '@/components/InstallButton';
 
 export function IntroScreen() {
   const setPhase = useUiStore((s) => s.setPhase);
+  const setGameSource = useUiStore((s) => s.setGameSource);
   return (
     <div
       className="ind-stage"
@@ -83,9 +84,27 @@ export function IntroScreen() {
           }}
         >
           <InstallButton />
-          <button className="primary hero" onClick={() => setPhase('setup')} autoFocus>
-            Começar &rarr;
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="primary"
+              onClick={() => {
+                setGameSource('local');
+                setPhase('setup');
+              }}
+            >
+              Hot-seat (mesma tela)
+            </button>
+            <button
+              className="primary hero"
+              onClick={() => {
+                setGameSource('online');
+                setPhase('online-lobby');
+              }}
+              autoFocus
+            >
+              Jogar online &rarr;
+            </button>
+          </div>
         </div>
       </Parchment>
     </div>
