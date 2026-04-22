@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Parchment } from '@/ui/Parchment';
 import { useUiStore } from '@/state/uiStore';
 import { ensureAnonymousUser, getSupabase } from '@/realtime/supabaseClient';
 import { listMembers, leaveRoom, appendAction, setCurrentPlayer } from '@/realtime/roomsApi';
 import type { RoomMemberRow, RoomRow } from '@/realtime/types';
 import type { TokenKind } from '@/engine/types';
+import { Shell, Header, Footer } from './OnlineLobbyScreen';
 
 const TOKENS: TokenKind[] = ['locomotive', 'top-hat', 'cotton-bobbin', 'pickaxe'];
 
@@ -16,6 +16,7 @@ export function RoomLobbyScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!roomId) return;
@@ -29,21 +30,27 @@ export function RoomLobbyScreen() {
   useEffect(() => {
     if (!roomId) return;
     refresh();
-    getSupabase().from('rooms').select('*').eq('id', roomId).single().then(({ data }) => {
-      if (data) setRoom(data as RoomRow);
-    });
+    getSupabase()
+      .from('rooms')
+      .select('*')
+      .eq('id', roomId)
+      .single()
+      .then(({ data }) => {
+        if (data) setRoom(data as RoomRow);
+      });
     const t = setInterval(refresh, 2000);
     return () => clearInterval(t);
   }, [roomId, refresh]);
 
   const me = members.find((m) => m.user_id === userId) ?? null;
-  const players = members.filter((m) => m.role === 'player').sort((a, b) => (a.seat_index ?? 0) - (b.seat_index ?? 0));
+  const players = members
+    .filter((m) => m.role === 'player')
+    .sort((a, b) => (a.seat_index ?? 0) - (b.seat_index ?? 0));
   const isHost = me && players[0]?.user_id === me.user_id;
 
   const shareUrl = room
     ? `${window.location.origin}${window.location.pathname}?room=${room.code}`
     : '';
-  const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
     if (!shareUrl) return;
@@ -52,13 +59,16 @@ export function RoomLobbyScreen() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      // Fallback: select the text; user can Ctrl+C.
+      // Fallback: selected text; user can Ctrl+C.
     }
   }
 
   async function handleStart() {
     if (!roomId || !userId) return;
-    if (players.length < 2) { setError('Precisa de pelo menos 2 jogadores'); return; }
+    if (players.length < 2) {
+      setError('Precisa de pelo menos 2 jogadores');
+      return;
+    }
     setBusy(true);
     try {
       const seed = Math.floor(Math.random() * 0xffffffff);
@@ -90,67 +100,74 @@ export function RoomLobbyScreen() {
   if (!roomId) return null;
 
   return (
-    <div className="ind-stage" style={{ padding: 24, display: 'flex', justifyContent: 'center' }}>
-      <Parchment padding="32px 40px" framed style={{ maxWidth: 520 }}>
-        <h1 style={{ marginTop: 0 }}>Sala</h1>
-        {room && (
-          <>
-            <p style={{ fontSize: '1.4rem', letterSpacing: 2, marginBottom: 4 }}>
-              Código: <strong>{room.code}</strong>
-            </p>
-            <div
-              style={{
-                display: 'flex',
-                gap: 8,
-                alignItems: 'center',
-                marginBottom: 12,
-                flexWrap: 'wrap',
-              }}
-            >
-              <input
-                readOnly
-                value={shareUrl}
-                onFocus={(e) => e.currentTarget.select()}
-                style={{ flex: 1, minWidth: 240, padding: 6, fontSize: 13 }}
-                aria-label="Link de convite"
-              />
-              <button onClick={handleCopy} className="primary" style={{ padding: '6px 12px' }}>
-                {copied ? 'Copiado!' : 'Copiar link'}
-              </button>
-            </div>
-          </>
-        )}
-        <p>Compartilhe o código ou o link com os outros jogadores. A partida começa quando o host clicar em "Iniciar".</p>
+    <Shell>
+      <Header title="Sala de espera" subtitle={room ? `Código ${room.code}` : 'Carregando…'} />
 
-        <h2>Jogadores ({players.length}/4)</h2>
-        <ul>
-          {players.map((p) => (
-            <li key={p.user_id}>
-              Assento {p.seat_index! + 1}: {p.nickname} {p.user_id === userId ? '(você)' : ''}
-            </li>
-          ))}
-        </ul>
+      <p style={{ textAlign: 'center' }}>
+        Compartilhe o link com os outros jogadores. A partida começa quando o host clicar em
+        iniciar.
+      </p>
 
-        <h2>Espectadores</h2>
-        <ul>
-          {members.filter((m) => m.role === 'spectator').map((s) => (
-            <li key={s.user_id}>{s.nickname}</li>
-          ))}
-        </ul>
+      {room && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+            marginBottom: 20,
+            flexWrap: 'wrap',
+          }}
+        >
+          <input
+            readOnly
+            value={shareUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            style={{ flex: 1, minWidth: 240, padding: '10px 12px', fontSize: '0.95rem' }}
+            aria-label="Link de convite"
+          />
+          <button className="primary" onClick={handleCopy}>
+            {copied ? 'Copiado!' : 'Copiar link'}
+          </button>
+        </div>
+      )}
 
+      <h2 style={{ marginBottom: 8 }}>Jogadores ({players.length}/4)</h2>
+      <ul style={{ marginTop: 0, paddingLeft: 20 }}>
+        {players.map((p) => (
+          <li key={p.user_id}>
+            Assento {p.seat_index! + 1}: {p.nickname}
+            {p.user_id === userId ? ' (você)' : ''}
+          </li>
+        ))}
+      </ul>
+
+      {members.some((m) => m.role === 'spectator') && (
+        <>
+          <h2 style={{ marginBottom: 8 }}>Espectadores</h2>
+          <ul style={{ marginTop: 0, paddingLeft: 20 }}>
+            {members
+              .filter((m) => m.role === 'spectator')
+              .map((s) => (
+                <li key={s.user_id}>{s.nickname}</li>
+              ))}
+          </ul>
+        </>
+      )}
+
+      <Footer>
+        <button onClick={handleLeave}>Sair da sala</button>
         {isHost && (
           <button
-            className="primary hero"
+            className="primary"
             onClick={handleStart}
             disabled={busy || players.length < 2}
-            style={{ width: '100%', marginTop: 16 }}
           >
-            Iniciar partida
+            {busy ? 'Iniciando…' : 'Iniciar partida'}
           </button>
         )}
-        <button onClick={handleLeave} style={{ marginTop: 12 }}>Sair da sala</button>
-        {error && <p style={{ color: '#a00' }}>{error}</p>}
-      </Parchment>
-    </div>
+      </Footer>
+
+      {error && <p style={{ color: '#a00', marginTop: 16, textAlign: 'center' }}>{error}</p>}
+    </Shell>
   );
 }
