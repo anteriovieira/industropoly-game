@@ -722,7 +722,8 @@ function handleDrawCard(state: GameState, deck: DeckId): GameState {
     turnPhase: 'drawing-card',
   };
   s = recordCardFact(s, card);
-  s = appendLog(s, `${selActive(s).name} comprou a carta ${card.title}.`);
+  const deckName = deck === 'invention' ? 'Baralho de Invenções' : 'Baralho de Editais';
+  s = appendLog(s, `${selActive(s).name} sacou "${card.title}" do ${deckName}.`);
   return s;
 }
 

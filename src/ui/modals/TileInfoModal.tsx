@@ -87,6 +87,32 @@ function TileBody({ tile }: { tile: Tile }) {
       <small style={{ color: 'var(--ink-muted)', fontStyle: 'italic' }}>
         Fonte: {tile.education.source}
       </small>
+      {tile.role === 'card' && (
+        <div
+          style={{
+            marginTop: 16,
+            padding: '12px 14px',
+            background: 'rgba(201, 148, 58, 0.14)',
+            border: '1px solid rgba(138, 100, 34, 0.45)',
+            borderLeft: '3px solid #c9943a',
+            borderRadius: 6,
+            boxShadow: 'inset 0 1px 0 rgba(250, 226, 160, 0.25)',
+          }}
+        >
+          <div className="ind-label" style={{ marginBottom: 4 }}>
+            Como esta casa funciona
+          </div>
+          <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.5 }}>
+            Ao pousar aqui, uma carta do{' '}
+            <strong>
+              {tile.deck === 'invention' ? 'Baralho de Invenções' : 'Baralho de Editais'}
+            </strong>{' '}
+            é sacada automaticamente. A carta pode render dinheiro, custar dinheiro,
+            mover seu token ou enviar à prisão — o efeito é aplicado na hora. Não há
+            compra nem escolha: o baralho decide.
+          </p>
+        </div>
+      )}
       {'price' in tile && (
         <div
           style={{
