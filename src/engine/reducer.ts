@@ -24,6 +24,7 @@ import type {
 import {
   CONSOLATION_MOVE_STEPS,
   MAX_TIER,
+  NEWSPAPER_CONSULT_COST,
   PASS_START_BONUS,
   PRISON_FEE,
   STREAK_BONUS_AMOUNT,
@@ -84,6 +85,8 @@ export function reducer(state: GameState, action: Action): GameState {
       return handleAnswerQuestion(state, action.optionId);
     case 'BUY_HINT':
       return handleBuyHint(state, action.hintId);
+    case 'BUY_NEWSPAPER':
+      return handleBuyNewspaper(state);
     case 'END_TURN':
       return handleEndTurn(state);
     default:
@@ -599,6 +602,28 @@ function handleBuyHint(state: GameState, hintId: string): GameState {
     },
   }));
   s = appendLog(s, `${p.name} comprou uma dica por R$${hint.priceCash}.`);
+  return s;
+}
+
+function handleBuyNewspaper(state: GameState): GameState {
+  if (state.turnPhase !== 'awaiting-quiz-answer' || !state.currentQuiz) return state;
+  if (state.currentQuiz.newspaperBought) return state;
+  const p = selActive(state);
+  if (p.cash < NEWSPAPER_CONSULT_COST) return state;
+  let s: GameState = {
+    ...state,
+    currentQuiz: { ...state.currentQuiz, newspaperBought: true },
+  };
+  s = updateActivePlayer(s, (pl) => ({
+    ...pl,
+    cash: pl.cash - NEWSPAPER_CONSULT_COST,
+    quizStats: {
+      ...pl.quizStats,
+      hintsBought: pl.quizStats.hintsBought + 1,
+      cashSpentOnHints: pl.quizStats.cashSpentOnHints + NEWSPAPER_CONSULT_COST,
+    },
+  }));
+  s = appendLog(s, `${p.name} comprou o jornal por R$${NEWSPAPER_CONSULT_COST}.`);
   return s;
 }
 

@@ -173,7 +173,15 @@ export interface CurrentQuiz {
   questionId: string;
   revealedHints: string[]; // hint ids already purchased
   eliminatedOptionIds: string[]; // from eliminate-option hints
+  // True after the player paid to consult the journal during this quiz. Used
+  // by the UI to disable the "buy newspaper" button on re-clicks and by the
+  // engine to gate a second cash deduction.
+  newspaperBought?: boolean;
 }
+
+// Cost of consulting the journal during a quiz. Same on every question — the
+// shop sells dice hints; this sells research time.
+export const NEWSPAPER_CONSULT_COST = 80;
 
 // A "newspaper issue" rendered at the board center. Headline ids reference
 // entries in `STORIES`. Length is currently 3 but kept as a list so a future
@@ -281,6 +289,7 @@ export type Action =
   | { type: 'PRISON_ROLL' } // try to roll doubles to escape
   | { type: 'ANSWER_QUESTION'; optionId: string }
   | { type: 'BUY_HINT'; hintId: string }
+  | { type: 'BUY_NEWSPAPER' }
   | { type: 'END_TURN' };
 
 export const PRISON_FEE = 50;

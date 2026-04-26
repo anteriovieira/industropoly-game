@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Modal } from './Modal';
 import { useGameStore } from '@/state/gameStore';
+import { useUiStore } from '@/state/uiStore';
 import { activePlayer } from '@/engine/selectors';
 import { getTile } from '@/content/tiles';
 import { getQuestionById } from '@/content/questions';
-import type { QuizHint, QuizOption } from '@/engine/types';
+import { NEWSPAPER_CONSULT_COST, type QuizHint, type QuizOption } from '@/engine/types';
 import { audio } from '@/lib/audio';
 
 // The quiz modal. Shown while turnPhase === 'awaiting-quiz-answer'.
@@ -246,6 +247,10 @@ export function QuestionModal() {
               }}
             />
           ))}
+          <NewspaperButton
+            bought={quiz.newspaperBought ?? false}
+            canAfford={p.cash >= NEWSPAPER_CONSULT_COST}
+          />
         </div>
       </div>
     </Modal>
@@ -326,6 +331,51 @@ function HintButton({
       title={revealed ? 'Dica já revelada' : !canAfford ? 'Dinheiro insuficiente' : undefined}
     >
       {label} · R${hint.priceCash}
+    </button>
+  );
+}
+
+function NewspaperButton({
+  bought,
+  canAfford,
+}: {
+  bought: boolean;
+  canAfford: boolean;
+}) {
+  const dispatch = useGameStore((s) => s.dispatch);
+  const setStoryOpen = useUiStore((s) => s.setStoryOpen);
+  const disabled = !bought && !canAfford;
+  function onClick(): void {
+    audio.play('click');
+    if (!bought) dispatch({ type: 'BUY_NEWSPAPER' });
+    setStoryOpen(true);
+  }
+  const label = bought
+    ? '📰 Reabrir jornal'
+    : `📰 Comprar jornal · R$${NEWSPAPER_CONSULT_COST}`;
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={
+        bought
+          ? 'Reabrir o jornal já comprado'
+          : `Comprar o jornal por R$${NEWSPAPER_CONSULT_COST} para procurar a resposta`
+      }
+      title={
+        bought
+          ? 'Você já comprou o jornal nesta pergunta — abra para reler.'
+          : !canAfford
+            ? 'Dinheiro insuficiente'
+            : 'Procure a resposta nas manchetes da edição atual.'
+      }
+      style={{
+        padding: '6px 10px',
+        fontSize: '0.85rem',
+        opacity: disabled ? 0.6 : 1,
+      }}
+    >
+      {label}
     </button>
   );
 }
