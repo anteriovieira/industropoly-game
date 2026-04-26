@@ -130,6 +130,16 @@ export function HudMenu({
             >
               🎯 Centralizar câmera <Shortcut>C</Shortcut>
             </MenuItem>
+            <MenuItem
+              onClick={() =>
+                runAndClose(() => {
+                  audio.play('click');
+                  window.location.reload();
+                })
+              }
+            >
+              🔄 Recarregar página
+            </MenuItem>
 
             <Divider />
 
