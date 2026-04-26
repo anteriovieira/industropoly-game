@@ -36,11 +36,26 @@ export function TileMesh({ tile, anchor, ownerColor = null, tier = 0, mortgaged 
   });
 
   const handleOver = (e: ThreeEvent<PointerEvent>): void => {
+    if (e.pointerType === 'touch') return;
     e.stopPropagation();
     setHovered(tile.id);
   };
-  const handleOut = (): void => {
+  const handleOut = (e: ThreeEvent<PointerEvent>): void => {
+    if (e.pointerType === 'touch') return;
     setHovered(null);
+  };
+  // On touch / coarse-pointer devices the tooltip is opened by tap. Tapping
+  // anywhere else (board background or any UI surface) closes it — see the
+  // global listeners in TileTooltip and Canvas.onPointerMissed.
+  const handleClick = (e: ThreeEvent<MouseEvent>): void => {
+    e.stopPropagation();
+    const isTouch =
+      (e.nativeEvent as PointerEvent | (MouseEvent & { pointerType?: string })).pointerType === 'touch';
+    if (!isTouch) return;
+    setHovered(tile.id, {
+      sticky: true,
+      pointerPos: { x: e.clientX, y: e.clientY },
+    });
   };
 
   const showOwnerIndicator = !anchor.isCorner && ownerColor != null;
@@ -58,7 +73,13 @@ export function TileMesh({ tile, anchor, ownerColor = null, tier = 0, mortgaged 
       position={[anchor.x, h / 2 + 0.01, anchor.z]}
       rotation={[0, anchor.rotationY, 0]}
     >
-      <mesh castShadow receiveShadow onPointerOver={handleOver} onPointerOut={handleOut}>
+      <mesh
+        castShadow
+        receiveShadow
+        onPointerOver={handleOver}
+        onPointerOut={handleOut}
+        onClick={handleClick}
+      >
         <boxGeometry args={[w, h, d]} />
         {/* Six materials: right, left, top(face), bottom, front, back.
             Side/bottom faces use a deeper stained-wood tone so the tile edge

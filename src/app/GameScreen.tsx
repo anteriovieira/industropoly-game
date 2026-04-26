@@ -24,7 +24,7 @@ import { useGameAudio } from '@/lib/audioSideEffects';
 import {
   DICE_TUMBLE_MS,
   DICE_SETTLE_BUFFER_MS,
-  landingDelayMs,
+  LANDING_SETTLE_MS,
   prefersReducedMotion,
 } from '@/scene/animTiming';
 
@@ -41,6 +41,7 @@ export function GameScreen() {
   const setAcquisitionsOpen = useUiStore((s) => s.setAcquisitionsOpen);
   const historyOpen = useUiStore((s) => s.historyOpen);
   const setHistoryOpen = useUiStore((s) => s.setHistoryOpen);
+  const movingTokenPlayerId = useUiStore((s) => s.movingTokenPlayerId);
   useGameAudio();
 
   // Autosave on state change
@@ -66,13 +67,16 @@ export function GameScreen() {
       return () => clearTimeout(t);
     }
     if (state.turnPhase === 'awaiting-land-action') {
-      const steps = state.lastRoll?.total ?? 0;
-      const delay = landingDelayMs(steps, reduced);
+      // Wait for the token's hop animation to finish before opening any modal.
+      // Tokens.tsx clears `movingTokenPlayerId` when the path drains; until
+      // then we hold off. Once cleared, only a small settle pause remains.
+      if (movingTokenPlayerId !== null) return undefined;
+      const delay = reduced ? 200 : LANDING_SETTLE_MS;
       const t = setTimeout(() => dispatch({ type: 'RESOLVE_LANDING' }), delay);
       return () => clearTimeout(t);
     }
     return undefined;
-  }, [state, dispatch, isMyTurn]);
+  }, [state, dispatch, isMyTurn, movingTokenPlayerId]);
 
   // Keyboard shortcuts.
   useEffect(() => {

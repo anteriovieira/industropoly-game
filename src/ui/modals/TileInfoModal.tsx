@@ -4,6 +4,7 @@ import { useGameStore } from '@/state/gameStore';
 import { getTile } from '@/content/tiles';
 import { sectorPalette } from '@/ui/theme';
 import { activePlayer } from '@/engine/selectors';
+import { PLAYER_COLORS } from '@/ui/theme';
 
 export function TileInfoModal({ tileId, readOnly = false }: { tileId: number; readOnly?: boolean }) {
   const state = useGameStore((s) => s.state)!;
@@ -29,6 +30,10 @@ export function TileInfoModal({ tileId, readOnly = false }: { tileId: number; re
     <Modal
       title={tile.name}
       label={`${roleLabel(tile)} · ${tile.education.date}`}
+      actor={{
+        name: p.name,
+        color: PLAYER_COLORS[state.activePlayerIndex] ?? PLAYER_COLORS[0],
+      }}
       onClose={() => dispatch({ type: 'ACK_MODAL' })}
       footer={
         <>
@@ -141,6 +146,8 @@ function TileBody({ tile }: { tile: Tile }) {
               R${tile.price}
             </span>
           </div>
+          <PlayerCashRow price={tile.price} />
+
           {tile.role === 'industry' && (
             <div style={{ fontSize: '0.88rem', color: 'var(--ink-soft)' }}>
               <span className="ind-label" style={{ fontSize: '0.68rem' }}>Aluguel</span>{' '}
@@ -163,6 +170,40 @@ function TileBody({ tile }: { tile: Tile }) {
         </div>
       )}
     </>
+  );
+}
+
+function PlayerCashRow({ price }: { price: number }) {
+  const state = useGameStore((s) => s.state);
+  if (!state) return null;
+  const p = activePlayer(state);
+  const after = p.cash - price;
+  const tight = after < 0;
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'baseline',
+        fontSize: '0.86rem',
+        color: tight ? 'var(--danger)' : 'var(--ink-soft)',
+      }}
+    >
+      <span className="ind-label" style={{ fontSize: '0.68rem' }}>
+        {p.name} · saldo
+      </span>
+      <span className="ind-tabular">
+        R${p.cash}
+        {!tight && (
+          <span style={{ color: 'var(--ink-muted)', marginLeft: 6 }}>
+            (sobra R${after} após compra)
+          </span>
+        )}
+        {tight && (
+          <span style={{ marginLeft: 6 }}>(faltam R${-after})</span>
+        )}
+      </span>
+    </div>
   );
 }
 

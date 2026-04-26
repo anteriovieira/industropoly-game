@@ -11,6 +11,9 @@ import type { Tile } from '@/engine/types';
 // follows the cursor without thrashing React state on every mouse move.
 export function TileTooltip() {
   const hoveredId = useUiStore((s) => s.hoveredTile);
+  const sticky = useUiStore((s) => s.hoveredTileSticky);
+  const stickyPos = useUiStore((s) => s.hoveredTilePointerPos);
+  const setHoveredTile = useUiStore((s) => s.setHoveredTile);
   const tiles = useGameStore((s) => s.state?.tiles);
   const players = useGameStore((s) => s.state?.players);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
@@ -20,12 +23,28 @@ export function TileTooltip() {
       setPos(null);
       return;
     }
+    if (stickyPos) setPos(stickyPos);
     function onMove(e: PointerEvent): void {
       setPos({ x: e.clientX, y: e.clientY });
     }
     window.addEventListener('pointermove', onMove);
     return () => window.removeEventListener('pointermove', onMove);
-  }, [hoveredId]);
+  }, [hoveredId, stickyPos]);
+
+  // Sticky mode (touch tap): close when the user taps anywhere outside the
+  // 3D canvas. Taps that hit the canvas are handled by R3F — Canvas.onPointerMissed
+  // clears empty-board taps, and TileMesh.onClick re-opens the tooltip on a
+  // different tile.
+  useEffect(() => {
+    if (!sticky) return undefined;
+    function onDocDown(e: PointerEvent): void {
+      const target = e.target as HTMLElement | null;
+      if (target?.tagName === 'CANVAS') return;
+      setHoveredTile(null);
+    }
+    document.addEventListener('pointerdown', onDocDown);
+    return () => document.removeEventListener('pointerdown', onDocDown);
+  }, [sticky, setHoveredTile]);
 
   if (hoveredId == null || pos == null) return null;
   const tile = getTile(hoveredId);

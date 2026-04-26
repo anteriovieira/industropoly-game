@@ -4,6 +4,8 @@ import { CardDrawAnimation } from './CardDrawAnimation';
 import { useGameStore } from '@/state/gameStore';
 import { INVENTION_CARDS } from '@/content/invention-cards';
 import { EDICT_CARDS } from '@/content/edict-cards';
+import { activePlayer } from '@/engine/selectors';
+import { PLAYER_COLORS } from '@/ui/theme';
 import type { Card, CardEffect } from '@/engine/types';
 
 const INDEX = Object.fromEntries(
@@ -77,6 +79,7 @@ const TONE_STYLE: Record<Tone, { accent: string; soft: string; label: string }> 
 
 export function CardModal({ cardId }: { cardId: string }) {
   const dispatch = useGameStore((s) => s.dispatch);
+  const state = useGameStore((s) => s.state);
   const card: Card | undefined = INDEX[cardId];
   // Draw animation plays on mount; once it finishes, the detailed modal swaps
   // in. `revealed` is keyed off cardId so a new card re-runs the sequence.
@@ -98,6 +101,14 @@ export function CardModal({ cardId }: { cardId: string }) {
     <Modal
       title={card.title}
       label={`Carta sacada · ${deckName}`}
+      actor={
+        state
+          ? {
+              name: activePlayer(state).name,
+              color: PLAYER_COLORS[state.activePlayerIndex] ?? PLAYER_COLORS[0],
+            }
+          : null
+      }
       onConfirm={() => dispatch({ type: 'APPLY_CARD' })}
       onClose={() => dispatch({ type: 'APPLY_CARD' })}
       confirmLabel={buttonLabel(card.effect)}

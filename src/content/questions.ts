@@ -67,6 +67,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'S. Chapman, "The Cotton Industry in the Industrial Revolution" (1987)',
     },
+    {
+      id: 'q-cromford-4',
+      prompt: 'Que mudança no conceito de tempo de trabalho a fábrica de Cromford simbolizou?',
+      options: [
+        { id: 'a', text: 'Trabalho medido pelo relógio, não pelo sol' },
+        { id: 'b', text: 'Pagamento por dia inteiro de luz solar' },
+        { id: 'c', text: 'Calendário lunar de turnos' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'A fábrica funcionava dia e noite em turnos disciplinados.' },
+      ],
+      source: 'E. P. Thompson, "Time, Work-Discipline, and Industrial Capitalism" (1967)',
+    },
   ],
   2: [
     {
@@ -113,6 +128,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'A ideia era tornar a assistência menos atraente que qualquer trabalho.' },
       ],
       source: 'A. Brundage, "The English Poor Laws, 1700–1930" (2002)',
+    },
+    {
+      id: 'q-edict-4',
+      prompt: 'Que tipo de administração local cobrava taxas de uso em estradas industriais?',
+      options: [
+        { id: 'a', text: 'Administrações de pedágios (turnpike trusts)' },
+        { id: 'b', text: 'Guildas medievais' },
+        { id: 'c', text: 'Companhias coloniais' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Mantinham e cobravam por trechos viários.' },
+      ],
+      source: 'W. Albert, "The Turnpike Road System in England" (1972)',
     },
   ],
   3: [
@@ -161,6 +191,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'C. Aspin, "The Water-Spinners" (2003)',
     },
+    {
+      id: 'q-strutt-4',
+      prompt: 'Em que década Jedediah Strutt começou suas melhorias nos teares de meias?',
+      options: [
+        { id: 'a', text: 'Década de 1750' },
+        { id: 'b', text: 'Década de 1820' },
+        { id: 'c', text: 'Década de 1870' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 20, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Antes da parceria com Arkwright.' },
+      ],
+      source: 'R. S. Fitton & A. P. Wadsworth, "The Strutts and the Arkwrights" (1958)',
+    },
   ],
   4: [
     {
@@ -180,18 +225,18 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
     },
     {
       id: 'q-imposto-pitt-2',
-      prompt: 'Que renda anual marcava o piso de tributação do imposto de 1799?',
+      prompt: 'Como o público britânico recebeu o primeiro imposto de renda de Pitt?',
       options: [
-        { id: 'a', text: '£60' },
-        { id: 'b', text: '£600' },
-        { id: 'c', text: '£6.000' },
+        { id: 'a', text: 'Aclamado e mantido sem alterações' },
+        { id: 'b', text: 'Extremamente impopular: revogado e reinstaurado' },
+        { id: 'c', text: 'Limitado a poucas paróquias rurais' },
       ],
-      correctOptionId: 'a',
+      correctOptionId: 'b',
       hints: [
         { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
-        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Mirava classes médias, não apenas os ricos.' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Demorou décadas até se tornar permanente.' },
       ],
-      source: 'P. Harling, "The Waning of Old Corruption" (1996)',
+      source: 'M. Daunton, "Trusting Leviathan" (2001)',
     },
     {
       id: 'q-imposto-pitt-3',
@@ -207,6 +252,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Décadas de conflito europeu inflaram esses gastos.' },
       ],
       source: 'P. K. O\'Brien, "The Political Economy of British Taxation, 1660–1815" (1988)',
+    },
+    {
+      id: 'q-imposto-pitt-4',
+      prompt: 'Que classe social sentia mais diretamente o peso do imposto de renda de Pitt?',
+      options: [
+        { id: 'a', text: 'Os industriais' },
+        { id: 'b', text: 'Os arrendatários rurais' },
+        { id: 'c', text: 'Os pescadores costeiros' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Geravam a maior parte da renda monetária da época.' },
+      ],
+      source: 'M. Daunton, "Trusting Leviathan" (2001)',
     },
   ],
   5: [
@@ -255,6 +315,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'H. Malet, "Bridgewater: The Canal Duke" (1977)',
     },
+    {
+      id: 'q-bridgewater-4',
+      prompt: 'Como ficou conhecido o período de expansão acelerada dos canais britânicos?',
+      options: [
+        { id: 'a', text: 'A Mania dos Canais' },
+        { id: 'b', text: 'O Salto do Ouro' },
+        { id: 'c', text: 'A Era do Vapor' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Em 1820 ligava as grandes cidades manufatureiras.' },
+      ],
+      source: 'C. Hadfield, "British Canals: An Illustrated History" (1950)',
+    },
   ],
   6: [
     {
@@ -301,6 +376,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Era reverendo em Leicestershire.' },
       ],
       source: 'M. Strickland, "A Memoir of the Life of Edmund Cartwright" (1843)',
+    },
+    {
+      id: 'q-cartwright-4',
+      prompt: 'Que mão de obra preencheu os galpões a vapor com teares mecânicos?',
+      options: [
+        { id: 'a', text: 'Crianças operadoras' },
+        { id: 'b', text: 'Soldados convalescentes' },
+        { id: 'c', text: 'Comerciantes itinerantes' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Substituíram as oficinas familiares em uma geração.' },
+      ],
+      source: 'D. Bythell, "The Handloom Weavers" (1969)',
     },
   ],
   7: [
@@ -349,6 +439,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'J. Uglow, "The Lunar Men" (2002)',
     },
+    {
+      id: 'q-patentes-4',
+      prompt: 'Qual conversor de aço passou pelo Escritório de Patentes décadas mais tarde?',
+      options: [
+        { id: 'a', text: 'O conversor de Bessemer' },
+        { id: 'b', text: 'O conversor a propano' },
+        { id: 'c', text: 'O conversor de Edison' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Soprava ar para produzir aço barato em larga escala.' },
+      ],
+      source: 'C. MacLeod, "Inventing the Industrial Revolution" (1988)',
+    },
   ],
   8: [
     {
@@ -383,18 +488,33 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
     },
     {
       id: 'q-boulton-3',
-      prompt: 'Que dispositivo mecânico de Watt permitiu à máquina girar eixos de fábrica?',
+      prompt: 'A que clientes Boulton notavelmente vendia potência rotativa a vapor?',
       options: [
-        { id: 'a', text: 'O governador centrífugo' },
-        { id: 'b', text: 'O movimento sol-e-planeta' },
-        { id: 'c', text: 'O freio a disco' },
+        { id: 'a', text: 'Moinhos e cervejarias' },
+        { id: 'b', text: 'Forças armadas reais' },
+        { id: 'c', text: 'Fazendas de gado' },
       ],
-      correctOptionId: 'b',
+      correctOptionId: 'a',
       hints: [
         { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
-        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Convertia movimento alternado em rotação sem usar biela comum.' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Eram clientes industriais e de bebidas que precisavam de eixos rotativos.' },
       ],
-      source: 'H. W. Dickinson & R. Jenkins, "James Watt and the Steam Engine" (1927)',
+      source: 'J. Uglow, "The Lunar Men" (2002)',
+    },
+    {
+      id: 'q-boulton-4',
+      prompt: 'Que prática de produção a Manufatura Soho foi pioneira em adotar?',
+      options: [
+        { id: 'a', text: 'Produção integrada sob mesmo teto' },
+        { id: 'b', text: 'Trabalho terceirizado em casas' },
+        { id: 'c', text: 'Cooperativa autônoma de mestres' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Reunia desenho, fundição, acabamento e montagem em um só lugar.' },
+      ],
+      source: 'J. Uglow, "The Lunar Men" (2002)',
     },
   ],
   9: [
@@ -443,6 +563,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'S. Chapman, "The Cotton Industry in the Industrial Revolution" (1987)',
     },
+    {
+      id: 'q-oldknow-4',
+      prompt: 'Que padrão paternalista Oldknow combinou em sua propriedade industrial?',
+      options: [
+        { id: 'a', text: 'Indústria com bem-estar paternalista' },
+        { id: 'b', text: 'Bancos e fábricas integrados' },
+        { id: 'c', text: 'Cooperativas autônomas' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Sua propriedade incluía até uma escola.' },
+      ],
+      source: 'G. Unwin, "Samuel Oldknow and the Arkwrights" (1924)',
+    },
   ],
   11: [
     {
@@ -490,6 +625,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'B. Trinder, "The Industrial Revolution in Shropshire" (1973)',
     },
+    {
+      id: 'q-wilkinson-4',
+      prompt: 'Que outra "primeira" feita de ferro Wilkinson construiu antes do caixão?',
+      options: [
+        { id: 'a', text: 'Uma barca de ferro' },
+        { id: 'b', text: 'Um relógio de bolso' },
+        { id: 'c', text: 'Um piano' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Mostrava que ferro podia até flutuar.' },
+      ],
+      source: 'A. N. Palmer, "John Wilkinson and the Old Bersham Ironworks" (1899)',
+    },
   ],
   12: [
     {
@@ -509,7 +659,7 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
     },
     {
       id: 'q-newcomen-2',
-      prompt: 'Em que ano Thomas Newcomen instalou sua primeira máquina comercial, em Dudley?',
+      prompt: 'Em que ano Thomas Newcomen instalou sua primeira máquina atmosférica comercial?',
       options: [
         { id: 'a', text: '1712' },
         { id: 'b', text: '1769' },
@@ -536,6 +686,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Seu cilindro era resfriado e reaquecido a cada ciclo.' },
       ],
       source: 'D. S. Landes, "The Unbound Prometheus" (1969)',
+    },
+    {
+      id: 'q-newcomen-4',
+      prompt: 'Segundo a metáfora industrial citada, o que o carvão alimentava diretamente?',
+      options: [
+        { id: 'a', text: 'O ferro' },
+        { id: 'b', text: 'A linhaça' },
+        { id: 'c', text: 'A pólvora' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Carvão → ferro → máquinas → algodão.' },
+      ],
+      source: 'L. T. C. Rolt, "Thomas Newcomen" (1963)',
     },
   ],
   13: [
@@ -584,6 +749,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'C. K. Hyde, "Technological Change and the British Iron Industry" (1977)',
     },
+    {
+      id: 'q-cort-4',
+      prompt: 'Qual foi o destino pessoal de Henry Cort após sua descoberta?',
+      options: [
+        { id: 'a', text: 'Foi arruinado por fraude de um sócio' },
+        { id: 'b', text: 'Tornou-se par do reino' },
+        { id: 'c', text: 'Migrou para a América' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Morreu na miséria, apesar de seu invento.' },
+      ],
+      source: 'R. A. Mott, "Henry Cort: The Great Finer" (1983)',
+    },
   ],
   14: [
     {
@@ -630,6 +810,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Até hoje é um marco Patrimônio da Humanidade.' },
       ],
       source: 'N. Cossons & B. Trinder, "The Iron Bridge" (2002)',
+    },
+    {
+      id: 'q-darby-4',
+      prompt: 'Quantas gerações da família Darby refinaram o processo de fundição com coque?',
+      options: [
+        { id: 'a', text: 'Três' },
+        { id: 'b', text: 'Uma' },
+        { id: 'c', text: 'Sete' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 20, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Em 1779 a família construiu a Iron Bridge.' },
+      ],
+      source: 'B. Trinder, "The Industrial Revolution in Shropshire" (1973)',
     },
   ],
   15: [
@@ -678,6 +873,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'M. Bailey, "Stephenson\'s Rocket: A History of a Pioneering Locomotive" (2010)',
     },
+    {
+      id: 'q-lm-railway-4',
+      prompt: 'Que pioneirismo a Liverpool–Manchester estabeleceu em 1830?',
+      options: [
+        { id: 'a', text: 'Serviço regular interurbano de passageiros e carga a vapor' },
+        { id: 'b', text: 'Primeira eletrificação ferroviária' },
+        { id: 'c', text: 'Primeira ferrovia subterrânea' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 20, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Pedidos por novas linhas inundaram o país semanas depois.' },
+      ],
+      source: 'R. H. G. Thomas, "The Liverpool and Manchester Railway" (1980)',
+    },
   ],
   16: [
     {
@@ -722,6 +932,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       hints: [
         { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Leva o nome de seu inventor francês, da era napoleônica.' },
+      ],
+      source: 'A. & N. L. Clow, "The Chemical Revolution" (1952)',
+    },
+    {
+      id: 'q-tennant-alcali-4',
+      prompt: 'Que dano ambiental da fábrica Tennant motivou primeiras leis de poluição?',
+      options: [
+        { id: 'a', text: 'Vazamentos de cloro e desmatamento de encostas' },
+        { id: 'b', text: 'Erosão costeira severa' },
+        { id: 'c', text: 'Tempestades de areia' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'A planta queimava encostas inteiras como combustível.' },
       ],
       source: 'A. & N. L. Clow, "The Chemical Revolution" (1952)',
     },
@@ -772,6 +997,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'J. T. Ward, "The Factory Movement 1830–1855" (1962)',
     },
+    {
+      id: 'q-factory-act-4',
+      prompt: 'Que limitação prática a Lei Fabril de 1833 sofria, segundo cronistas da época?',
+      options: [
+        { id: 'a', text: 'Era frequentemente burlada' },
+        { id: 'b', text: 'Aplicava-se apenas em Londres' },
+        { id: 'c', text: 'Vigia só aos domingos' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Mesmo assim, o princípio da inspeção foi estabelecido.' },
+      ],
+      source: 'B. L. Hutchins and A. Harrison, "A History of Factory Legislation" (1903)',
+    },
   ],
   18: [
     {
@@ -819,6 +1059,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'J. Loadman, "Tears of the Tree: The Story of Rubber" (2005)',
     },
+    {
+      id: 'q-macintosh-4',
+      prompt: 'Quem resolveu, em 1839, o problema da borracha endurecer no inverno?',
+      options: [
+        { id: 'a', text: 'Charles Goodyear, com a vulcanização' },
+        { id: 'b', text: 'Thomas Edison, com aditivos elétricos' },
+        { id: 'c', text: 'Louis Pasteur, com ácidos suaves' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Hoje seu sobrenome batiza uma marca de pneus.' },
+      ],
+      source: 'C. Slack, "Noble Obsession: Charles Goodyear" (2002)',
+    },
   ],
   19: [
     {
@@ -853,18 +1108,33 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
     },
     {
       id: 'q-branqueamento-3',
-      prompt: 'Qual químico francês identificou o cloro como agente branqueador eficiente?',
+      prompt: 'Que dano ambiental do branqueamento industrial motivou primeiras leis de poluição?',
       options: [
-        { id: 'a', text: 'Claude Louis Berthollet' },
-        { id: 'b', text: 'Antoine Lavoisier' },
-        { id: 'c', text: 'Louis Pasteur' },
+        { id: 'a', text: 'Neves negras e rios envenenados' },
+        { id: 'b', text: 'Tornados frequentes' },
+        { id: 'c', text: 'Frio anormal nos verões' },
       ],
       correctOptionId: 'a',
       hints: [
         { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
-        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Colaborava com James Watt em experimentos sobre branqueamento.' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Era marca registrada do Black Country.' },
       ],
-      source: 'A. & N. L. Clow, "The Chemical Revolution" (1952)',
+      source: 'A. E. Musson and E. Robinson, "Science and Technology in the Industrial Revolution" (1969)',
+    },
+    {
+      id: 'q-branqueamento-4',
+      prompt: 'Que três insumos químicos eram base do branqueamento industrial?',
+      options: [
+        { id: 'a', text: 'Cloro, cal e ácido sulfúrico' },
+        { id: 'b', text: 'Iodo, gesso e álcool' },
+        { id: 'c', text: 'Bromo, magnésio e nitrogênio' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'O ácido vinha das usinas Leblanc.' },
+      ],
+      source: 'A. E. Musson and E. Robinson, "Science and Technology in the Industrial Revolution" (1969)',
     },
   ],
   21: [
@@ -913,6 +1183,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'L. T. C. Rolt, "Isambard Kingdom Brunel" (1957)',
     },
+    {
+      id: 'q-brunel-tunnel-4',
+      prompt: 'Que tipo de obra moderna o escudo de escavação tornou possível?',
+      options: [
+        { id: 'a', text: 'Túneis de metrô urbano' },
+        { id: 'b', text: 'Eclusas marítimas' },
+        { id: 'c', text: 'Pontes pênseis' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Permitiu engenharia sob as cidades, não só ao lado delas.' },
+      ],
+      source: 'S. Brunel, "The Life of Isambard Kingdom Brunel" (1870)',
+    },
   ],
   22: [
     {
@@ -957,6 +1242,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       hints: [
         { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Era liderada por Richard Cobden e John Bright.' },
+      ],
+      source: 'N. McCord, "The Anti-Corn Law League" (1958)',
+    },
+    {
+      id: 'q-corn-laws-4',
+      prompt: 'Quem financiava a Liga Anti-Leis dos Cereais em sua campanha de massa?',
+      options: [
+        { id: 'a', text: 'Donos de fábricas' },
+        { id: 'b', text: 'A Igreja Anglicana' },
+        { id: 'c', text: 'A Companhia das Índias Orientais' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Pagavam os salários que compravam o pão.' },
       ],
       source: 'N. McCord, "The Anti-Corn Law League" (1958)',
     },
@@ -1007,6 +1307,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'J. Nasmyth, "James Nasmyth, Engineer: An Autobiography" (1883)',
     },
+    {
+      id: 'q-maudslay-4',
+      prompt: 'Quais três engenheiros notáveis se formaram nas oficinas de Maudslay?',
+      options: [
+        { id: 'a', text: 'Whitworth, Nasmyth e Richard Roberts' },
+        { id: 'b', text: 'Watt, Boulton e Trevithick' },
+        { id: 'c', text: 'Stephenson, Telford e Brunel' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Todos depois nomearam padrões ou máquinas próprios.' },
+      ],
+      source: 'J. Nasmyth, "James Nasmyth, Engineer: An Autobiography" (1883)',
+    },
   ],
   24: [
     {
@@ -1053,6 +1368,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Foi fundada por Samuel Cunard em 1840.' },
       ],
       source: 'F. E. Hyde, "Cunard and the North Atlantic 1840–1973" (1975)',
+    },
+    {
+      id: 'q-clyde-4',
+      prompt: 'Que termo virou sinônimo global de qualidade na construção naval?',
+      options: [
+        { id: 'a', text: 'Clydebuilt' },
+        { id: 'b', text: 'Mersey-rated' },
+        { id: 'c', text: 'Tyne-tested' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 20, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Vem do rio escocês onde ficavam os estaleiros pioneiros.' },
+      ],
+      source: 'J. Napier, "Life of Robert Napier of West Shandon" (1904)',
     },
   ],
   25: [
@@ -1101,6 +1431,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'S. Brindle, "Brunel: The Man Who Built the World" (2005)',
     },
+    {
+      id: 'q-gwr-4',
+      prompt: 'Qual lei de 1846 condenou na prática a bitola larga de Brunel?',
+      options: [
+        { id: 'a', text: 'A Lei das Bitolas (Gauge Act)' },
+        { id: 'b', text: 'O Reform Act' },
+        { id: 'c', text: 'O Mines Act' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Lição precoce sobre travas técnicas em redes.' },
+      ],
+      source: 'L. T. C. Rolt, "Isambard Kingdom Brunel" (1957)',
+    },
   ],
   26: [
     {
@@ -1147,6 +1492,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Ligava minas do norte ao rio Tees.' },
       ],
       source: 'M. Kirby, "The Origins of Railway Enterprise" (1993)',
+    },
+    {
+      id: 'q-stephenson-rocket-4',
+      prompt: 'Que mudança social cotidiana a era ferroviária inaugurou?',
+      options: [
+        { id: 'a', text: 'A primeira viagem diária ao trabalho' },
+        { id: 'b', text: 'O fim das hospedarias rurais' },
+        { id: 'c', text: 'A criação do correio postal' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Junto veio o primeiro horário nacional.' },
+      ],
+      source: 'R. Young, "Timothy Hackworth and the Locomotive" (1923)',
     },
   ],
   27: [
@@ -1195,6 +1555,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'L. T. C. Rolt, "Tools for the Job: A History of Machine Tools" (1965)',
     },
+    {
+      id: 'q-whitworth-4',
+      prompt: 'Que status formal alcançou a rosca Whitworth na indústria britânica?',
+      options: [
+        { id: 'a', text: 'Norma nacional britânica' },
+        { id: 'b', text: 'Padrão exclusivo da Marinha' },
+        { id: 'c', text: 'Marca proibida pelo Parlamento' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Inspirou padrões internacionais posteriores.' },
+      ],
+      source: 'N. Atkinson, "Sir Joseph Whitworth" (1996)',
+    },
   ],
   28: [
     {
@@ -1242,6 +1617,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'C. Hamlin, "Public Health and Social Justice in the Age of Chadwick" (1998)',
     },
+    {
+      id: 'q-water-manchester-4',
+      prompt: 'Em que ano os reservatórios de Longdendale começaram a abastecer Manchester?',
+      options: [
+        { id: 'a', text: '1848' },
+        { id: 'b', text: '1700' },
+        { id: 'c', text: '1900' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 20, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Mesma década do mapa do Soho de John Snow.' },
+      ],
+      source: 'S. Johnson, "The Ghost Map" (2006)',
+    },
   ],
   29: [
     {
@@ -1286,6 +1676,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       hints: [
         { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'b' },
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Os patrões queriam uma máquina que dispensasse o operário habilidoso.' },
+      ],
+      source: 'W. Lazonick, "Industrial Relations and Technical Change" (1979)',
+    },
+    {
+      id: 'q-selfactor-4',
+      prompt: 'Qual perfil de trabalhador o selfactor passou a empregar com frequência?',
+      options: [
+        { id: 'a', text: 'Mulheres e crianças' },
+        { id: 'b', text: 'Mestres veteranos' },
+        { id: 'c', text: 'Ex-marinheiros' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Quebrou o poder dos fiandeiros qualificados.' },
       ],
       source: 'W. Lazonick, "Industrial Relations and Technical Change" (1979)',
     },
@@ -1336,6 +1741,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'S. Morison, "The History of The Times" (1935)',
     },
+    {
+      id: 'q-koenig-times-4',
+      prompt: 'Que efeito social a impressão a vapor de Koenig viabilizou?',
+      options: [
+        { id: 'a', text: 'Jornais e opinião pública de massa' },
+        { id: 'b', text: 'Voto eletrônico' },
+        { id: 'c', text: 'Telegrafia sem fio' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'O preço da folha despencou drasticamente.' },
+      ],
+      source: 'S. Morison, "The History of The Times" (1935)',
+    },
   ],
   32: [
     {
@@ -1380,6 +1800,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       hints: [
         { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Permitia fazer cópias metálicas fundidas de páginas compostas.' },
+      ],
+      source: 'M. Twyman, "Printing 1770–1970" (1970)',
+    },
+    {
+      id: 'q-stanhope-4',
+      prompt: 'Qual tecnologia de prensa Stanhope substituiu, em uso desde o século XV?',
+      options: [
+        { id: 'a', text: 'Prensa de parafuso de madeira' },
+        { id: 'b', text: 'Prensa hidráulica' },
+        { id: 'c', text: 'Prensa rotativa a vapor' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 20, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Era essencialmente o design da época de Gutenberg.' },
       ],
       source: 'M. Twyman, "Printing 1770–1970" (1970)',
     },
@@ -1430,6 +1865,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'T. Standage, "The Victorian Internet" (1998)',
     },
+    {
+      id: 'q-telegrafo-4',
+      prompt: 'Que infraestrutura encolheu o mundo na era vitoriana, em vinte anos?',
+      options: [
+        { id: 'a', text: 'Os cabos telegráficos transatlânticos' },
+        { id: 'b', text: 'As linhas ferroviárias polares' },
+        { id: 'c', text: 'Os túneis sob os Alpes' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Primeira tentativa duradoura cruzou o Atlântico em 1866.' },
+      ],
+      source: 'T. Standage, "The Victorian Internet" (1998)',
+    },
   ],
   34: [
     {
@@ -1474,6 +1924,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       hints: [
         { id: 'h1', kind: 'eliminate-option', priceCash: 20, payload: 'c' },
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Trabalhou na ornamentação de canos de pistolas.' },
+      ],
+      source: 'J. Mosley, "The Nymph and the Grot" (1999)',
+    },
+    {
+      id: 'q-caslon-4',
+      prompt: 'Em qual rua londrina ficavam as fundições de tipos como a Caslon?',
+      options: [
+        { id: 'a', text: 'Chiswell Street' },
+        { id: 'b', text: 'Fleet Street' },
+        { id: 'c', text: 'Downing Street' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'b' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Próxima ao bairro de Moorfields, fora da City.' },
       ],
       source: 'J. Mosley, "The Nymph and the Grot" (1999)',
     },
@@ -1524,6 +1989,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'A. A. Jackson, "London\'s Termini" (1969)',
     },
+    {
+      id: 'q-lbr-4',
+      prompt: 'Quantas classes diferentes de passageiros a Londres–Birmingham transportava?',
+      options: [
+        { id: 'a', text: 'Quatro' },
+        { id: 'b', text: 'Duas' },
+        { id: 'c', text: 'Sete' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 20, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'As ferrovias tornaram a classe visível em aço e veludo.' },
+      ],
+      source: 'T. Roscoe, "The London and Birmingham Railway" (1838)',
+    },
   ],
   36: [
     {
@@ -1568,6 +2048,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       hints: [
         { id: 'h1', kind: 'eliminate-option', priceCash: 20, payload: 'c' },
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'A jenny ameaçava o modo tradicional de fiar em casa.' },
+      ],
+      source: 'W. A. Abram, "Blackburn Characters of a Past Generation" (1894)',
+    },
+    {
+      id: 'q-hargreaves-4',
+      prompt: 'Em que cidade fiandeiras destruíram jennies de Hargreaves em 1768?',
+      options: [
+        { id: 'a', text: 'Blackburn' },
+        { id: 'b', text: 'Londres' },
+        { id: 'c', text: 'Edimburgo' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 20, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Cidade de Lancashire, berço do algodão inglês.' },
       ],
       source: 'W. A. Abram, "Blackburn Characters of a Past Generation" (1894)',
     },
@@ -1618,6 +2113,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'J. Clapham, "The Bank of England: A History" (1944)',
     },
+    {
+      id: 'q-bank-england-4',
+      prompt: 'Para qual onda de financiamento ferroviário o sistema bancário moderno surgiu?',
+      options: [
+        { id: 'a', text: 'A Mania das Ferrovias' },
+        { id: 'b', text: 'A bolha das tulipas' },
+        { id: 'c', text: 'O South Sea Bubble' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'b' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Bancos por ações foram autorizados a partir de 1826.' },
+      ],
+      source: 'P. L. Cottrell, "Industrial Finance 1830–1914" (1980)',
+    },
   ],
   38: [
     {
@@ -1665,6 +2175,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
       ],
       source: 'W. Kennedy, "English Taxation, 1640–1799" (1913)',
     },
+    {
+      id: 'q-window-tax-4',
+      prompt: 'Que outras taxas fragmentadas a Coroa cobrava no século XVIII?',
+      options: [
+        { id: 'a', text: 'Lareiras, sabão, velas e sal' },
+        { id: 'b', text: 'Cavalos e carruagens' },
+        { id: 'c', text: 'Cervejas e vinhos' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Atingiam itens domésticos cotidianos.' },
+      ],
+      source: 'A. M. T. Watkin, "The Window Tax" (1890)',
+    },
   ],
   39: [
     {
@@ -1711,6 +2236,21 @@ export const QUESTIONS: Record<TileId, readonly Question[]> = {
         { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Era centrado principalmente no chá de Cantão.' },
       ],
       source: 'H. V. Bowen, "The Business of Empire" (2006)',
+    },
+    {
+      id: 'q-east-india-4',
+      prompt: 'Que estrutura institucional a Companhia das Índias Orientais mantinha além do comércio?',
+      options: [
+        { id: 'a', text: 'Exército privado e máquina fiscal próprias' },
+        { id: 'b', text: 'Apenas escolas e hospitais' },
+        { id: 'c', text: 'Somente uma frota mercante' },
+      ],
+      correctOptionId: 'a',
+      hints: [
+        { id: 'h1', kind: 'eliminate-option', priceCash: 30, payload: 'c' },
+        { id: 'h2', kind: 'clue-text', priceCash: 40, payload: 'Estavam entrelaçadas com a ascensão industrial britânica.' },
+      ],
+      source: 'S. Beckert, "Empire of Cotton" (2014)',
     },
   ],
 };

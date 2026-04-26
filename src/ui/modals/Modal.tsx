@@ -5,6 +5,8 @@ interface ModalProps {
   title: string;
   /** Small-caps category tag shown above the title (e.g. "Têxteis · Lancashire"). */
   label?: string;
+  /** Whose turn it is. Rendered as a chip so the modal always identifies the actor. */
+  actor?: { name: string; color?: string } | null;
   onClose?: () => void;
   onConfirm?: () => void;
   confirmLabel?: string;
@@ -16,6 +18,7 @@ interface ModalProps {
 export function Modal({
   title,
   label,
+  actor,
   onClose,
   onConfirm,
   confirmLabel = 'OK',
@@ -88,6 +91,37 @@ export function Modal({
               style={{ marginBottom: 6, color: 'var(--ink-muted)' }}
             >
               {label}
+            </div>
+          )}
+          {actor && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 8,
+                padding: '3px 9px',
+                borderRadius: 999,
+                background: 'rgba(26,14,6,0.08)',
+                border: '1px solid rgba(26,14,6,0.25)',
+                fontSize: '0.75rem',
+                color: 'var(--ink-soft)',
+                fontFamily: 'var(--font-body)',
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 8,
+                  background: actor.color ?? '#c9943a',
+                  boxShadow: '0 0 0 1px rgba(26,14,6,0.4)',
+                }}
+              />
+              <span>
+                Vez de <strong style={{ color: 'var(--ink)' }}>{actor.name}</strong>
+              </span>
             </div>
           )}
           <h2 style={{ marginTop: 0, marginBottom: 10 }}>{title}</h2>

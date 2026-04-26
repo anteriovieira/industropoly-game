@@ -2,6 +2,7 @@ import { Modal } from './Modal';
 import { useGameStore } from '@/state/gameStore';
 import { getTile } from '@/content/tiles';
 import { activePlayer, playerById } from '@/engine/selectors';
+import { PLAYER_COLORS } from '@/ui/theme';
 
 export function RentModal({ tileId, owed }: { tileId: number; owed: number }) {
   const state = useGameStore((s) => s.state)!;
@@ -15,6 +16,10 @@ export function RentModal({ tileId, owed }: { tileId: number; owed: number }) {
   return (
     <Modal
       title={`Aluguel devido em ${tile.name}`}
+      actor={{
+        name: p.name,
+        color: PLAYER_COLORS[state.activePlayerIndex] ?? PLAYER_COLORS[0],
+      }}
       onConfirm={() => dispatch({ type: 'ACK_MODAL' })}
       confirmLabel={canAfford ? `Pagar R$${owed}` : 'Quitar dívida'}
       dismissible={false}
