@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  type MutableRefObject,
+} from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/state/gameStore';
@@ -83,22 +90,37 @@ export function Dice() {
     if (canRoll) dispatch({ type: 'ROLL_DICE' });
   }
 
+  const handleA = useRef<DieHandle | null>(null);
+  const handleB = useRef<DieHandle | null>(null);
+
   return (
     <>
       <DraggableDie
+        ref={handleA}
         defaultPos={[-PAIR_DX, REST_Y, 0]}
         face={lastRoll?.a ?? 1}
         rollNonce={lastRoll}
         onDoubleClick={tryRoll}
+        getOther={() => handleB.current}
       />
       <DraggableDie
+        ref={handleB}
         defaultPos={[PAIR_DX, REST_Y, 0]}
         face={lastRoll?.b ?? 1}
         rollNonce={lastRoll}
         onDoubleClick={tryRoll}
+        getOther={() => handleA.current}
       />
     </>
   );
+}
+
+// Exposed by each DraggableDie so its sibling can resolve drag-time collisions
+// without lifting all positional state into the parent.
+interface DieHandle {
+  group: THREE.Group | null;
+  restPos: MutableRefObject<THREE.Vector3>;
+  isPhysicsActive: () => boolean;
 }
 
 interface DraggableDieProps {
@@ -106,14 +128,30 @@ interface DraggableDieProps {
   face: number;
   rollNonce: object | null;
   onDoubleClick: () => void;
+  getOther: () => DieHandle | null;
 }
 
-function DraggableDie({ defaultPos, face, rollNonce, onDoubleClick }: DraggableDieProps) {
+const DraggableDie = forwardRef<DieHandle, DraggableDieProps>(function DraggableDie(
+  { defaultPos, face, rollNonce, onDoubleClick, getOther },
+  outerRef,
+) {
   const groupRef = useRef<THREE.Group>(null);
   const physicsRef = useRef<DiePhysics | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const restPosRef = useRef<THREE.Vector3>(new THREE.Vector3(...defaultPos));
   const restQRef = useRef<THREE.Quaternion>(faceQuaternion(face));
+
+  useImperativeHandle(
+    outerRef,
+    () => ({
+      get group() {
+        return groupRef.current;
+      },
+      restPos: restPosRef,
+      isPhysicsActive: () => physicsRef.current !== null,
+    }),
+    [],
+  );
 
   // Initial mount: snap the group transform to the default rest pose.
   useEffect(() => {
@@ -197,6 +235,14 @@ function DraggableDie({ defaultPos, face, rollNonce, onDoubleClick }: DraggableD
     const next = hit.add(drag.offset);
     next.x = clamp(next.x, -DRAG_BOUND, DRAG_BOUND);
     next.z = clamp(next.z, -DRAG_BOUND, DRAG_BOUND);
+    next.y = REST_Y;
+    // Resolve collision against the other die so the user can shove it around
+    // instead of overlapping it. Skip resolution while the other die is
+    // mid-physics (its position is animated by the sim, not the rest pose).
+    const other = getOther();
+    if (other && !other.isPhysicsActive()) {
+      resolvePairCollision(next, other);
+    }
     restPosRef.current.set(next.x, REST_Y, next.z);
     drag.moved = true;
     const g = groupRef.current;
@@ -231,6 +277,44 @@ function DraggableDie({ defaultPos, face, rollNonce, onDoubleClick }: DraggableD
       <DieMesh />
     </group>
   );
+});
+
+// Axis-aligned XZ collision resolution between the dragged die (proposed pos
+// in `next`) and the other die. If they overlap, push the other die along the
+// shorter penetration axis. If the push would clip the bound, the dragged die
+// stops short — the user can push the other die around but never through it.
+function resolvePairCollision(next: THREE.Vector3, other: DieHandle): void {
+  const otherPos = other.restPos.current;
+  const dx = next.x - otherPos.x;
+  const dz = next.z - otherPos.z;
+  const overlapX = DIE_SIZE - Math.abs(dx);
+  const overlapZ = DIE_SIZE - Math.abs(dz);
+  if (overlapX <= 0 || overlapZ <= 0) return;
+  if (overlapX < overlapZ) {
+    const dir = dx >= 0 ? 1 : -1;
+    const target = otherPos.x - dir * overlapX;
+    const clamped = clamp(target, -DRAG_BOUND, DRAG_BOUND);
+    const moved = otherPos.x - clamped;
+    otherPos.x = clamped;
+    if (other.group) other.group.position.x = clamped;
+    const remaining = overlapX - Math.abs(moved);
+    if (remaining > 1e-4) {
+      next.x -= dir * remaining;
+      next.x = clamp(next.x, -DRAG_BOUND, DRAG_BOUND);
+    }
+  } else {
+    const dir = dz >= 0 ? 1 : -1;
+    const target = otherPos.z - dir * overlapZ;
+    const clamped = clamp(target, -DRAG_BOUND, DRAG_BOUND);
+    const moved = otherPos.z - clamped;
+    otherPos.z = clamped;
+    if (other.group) other.group.position.z = clamped;
+    const remaining = overlapZ - Math.abs(moved);
+    if (remaining > 1e-4) {
+      next.z -= dir * remaining;
+      next.z = clamp(next.z, -DRAG_BOUND, DRAG_BOUND);
+    }
+  }
 }
 
 // ---- Physics simulation ----
