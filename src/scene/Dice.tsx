@@ -115,12 +115,18 @@ export function Dice() {
   );
 }
 
-// Exposed by each DraggableDie so its sibling can resolve drag-time collisions
-// without lifting all positional state into the parent.
+// Exposed by each DraggableDie so its sibling can resolve drag-time and
+// physics-time collisions without lifting all positional state into the parent.
 interface DieHandle {
   group: THREE.Group | null;
   restPos: MutableRefObject<THREE.Vector3>;
   isPhysicsActive: () => boolean;
+  // Returns the live physics position vector if the sim is running, otherwise
+  // the rest pose. Used by the sibling die during collision resolution.
+  getLivePos: () => THREE.Vector3;
+  // Velocity is needed when the sibling pushes us mid-flight so we can swap
+  // momentum along the collision normal instead of just teleporting.
+  getVel: () => THREE.Vector3 | null;
 }
 
 interface DraggableDieProps {
@@ -149,6 +155,9 @@ const DraggableDie = forwardRef<DieHandle, DraggableDieProps>(function Draggable
       },
       restPos: restPosRef,
       isPhysicsActive: () => physicsRef.current !== null,
+      getLivePos: () =>
+        physicsRef.current ? physicsRef.current.pos : restPosRef.current,
+      getVel: () => (physicsRef.current ? physicsRef.current.vel : null),
     }),
     [],
   );
@@ -186,6 +195,16 @@ const DraggableDie = forwardRef<DieHandle, DraggableDieProps>(function Draggable
 
     if (!phys.settled) {
       stepPhysics(phys, dt, restPosRef.current.y);
+      // Resolve overlap against the sibling die so two falling cubes can't
+      // tunnel through each other. Only nudges this die — the sibling does
+      // the same on its own useFrame, so the pair separates symmetrically
+      // over a frame or two.
+      const other = getOther();
+      if (other) {
+        const otherPos = other.getLivePos();
+        const otherVel = other.getVel();
+        resolvePhysicsCollision(phys, otherPos, otherVel);
+      }
       const elapsed = performance.now() - phys.startTime;
       // Force settle if we've eaten the entire physics budget — we MUST leave
       // SETTLE_MS for the closing slerp so total animation is bounded.
@@ -278,6 +297,52 @@ const DraggableDie = forwardRef<DieHandle, DraggableDieProps>(function Draggable
     </group>
   );
 });
+
+// 3D AABB collision resolution between this die's live physics state and the
+// sibling. We only modify *this* die's pos and velocity — the sibling resolves
+// the same overlap from its own perspective on its useFrame, which gives us
+// equal-mass push-back without needing to mutate two physics structs from one
+// frame. The reflected component is dampened so a bumped pair settles instead
+// of bouncing off each other forever.
+const DICE_RESTITUTION = 0.45;
+function resolvePhysicsCollision(
+  phys: DiePhysics,
+  otherPos: THREE.Vector3,
+  otherVel: THREE.Vector3 | null,
+): void {
+  const dx = phys.pos.x - otherPos.x;
+  const dy = phys.pos.y - otherPos.y;
+  const dz = phys.pos.z - otherPos.z;
+  const overlapX = DIE_SIZE - Math.abs(dx);
+  const overlapY = DIE_SIZE - Math.abs(dy);
+  const overlapZ = DIE_SIZE - Math.abs(dz);
+  if (overlapX <= 0 || overlapY <= 0 || overlapZ <= 0) return;
+
+  // Pick the axis with the smallest penetration — that's the natural separating
+  // axis for two AABBs in contact.
+  if (overlapX <= overlapY && overlapX <= overlapZ) {
+    const dir = dx >= 0 ? 1 : -1;
+    phys.pos.x += dir * overlapX * 0.5;
+    const ov = otherVel ? otherVel.x : 0;
+    if (Math.sign(phys.vel.x) !== dir) {
+      phys.vel.x = (ov - phys.vel.x * DICE_RESTITUTION);
+    }
+  } else if (overlapY <= overlapZ) {
+    const dir = dy >= 0 ? 1 : -1;
+    phys.pos.y += dir * overlapY * 0.5;
+    const ov = otherVel ? otherVel.y : 0;
+    if (Math.sign(phys.vel.y) !== dir) {
+      phys.vel.y = (ov - phys.vel.y * DICE_RESTITUTION);
+    }
+  } else {
+    const dir = dz >= 0 ? 1 : -1;
+    phys.pos.z += dir * overlapZ * 0.5;
+    const ov = otherVel ? otherVel.z : 0;
+    if (Math.sign(phys.vel.z) !== dir) {
+      phys.vel.z = (ov - phys.vel.z * DICE_RESTITUTION);
+    }
+  }
+}
 
 // Axis-aligned XZ collision resolution between the dragged die (proposed pos
 // in `next`) and the other die. If they overlap, push the other die along the
