@@ -97,6 +97,7 @@ export function BoardScene() {
       shadows={shadowsEnabled}
       dpr={effectivePixelRatio}
       camera={{ position: DEFAULT_CAMERA_POS, fov: 36, near: 0.1, far: 200 }}
+      onPointerMissed={() => useUiStore.getState().setHoveredTile(null)}
       // iPad Chrome (CriOS) frequently creates a WebGL context that is
       // already lost — `antialias: true` + the default `high-performance`
       // power preference make this more likely. On coarse-pointer devices we

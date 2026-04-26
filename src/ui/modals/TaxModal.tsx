@@ -2,6 +2,7 @@ import { Modal } from './Modal';
 import { useGameStore } from '@/state/gameStore';
 import { getTile } from '@/content/tiles';
 import { activePlayer } from '@/engine/selectors';
+import { PLAYER_COLORS } from '@/ui/theme';
 
 export function TaxModal({ tileId, owed }: { tileId: number; owed: number }) {
   const state = useGameStore((s) => s.state)!;
@@ -11,6 +12,10 @@ export function TaxModal({ tileId, owed }: { tileId: number; owed: number }) {
   return (
     <Modal
       title={tile.name}
+      actor={{
+        name: p.name,
+        color: PLAYER_COLORS[state.activePlayerIndex] ?? PLAYER_COLORS[0],
+      }}
       onConfirm={() => dispatch({ type: 'ACK_MODAL' })}
       confirmLabel={`Pagar R$${owed}`}
       dismissible={false}

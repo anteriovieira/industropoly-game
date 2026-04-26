@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useGameStore } from '@/state/gameStore';
+import { useUiStore } from '@/state/uiStore';
 import { anchorForTile, tokenSlot } from '../layout';
 import { HOP_DURATION_MS } from '../animTiming';
 import { Token } from './tokenParts';
@@ -48,6 +49,14 @@ function PlayerToken({ player, slot, color }: { player: Player; slot: number; co
   );
   const prevOwnedRef = useRef<number>(ownedCount);
 
+  // Signals to the landing-modal scheduler that this token is mid-flight.
+  const setMovingTokenPlayerId = useUiStore((s) => s.setMovingTokenPlayerId);
+  const focusCameraOnTile = useUiStore((s) => s.focusCameraOnTile);
+  const isAnimatingRef = useRef(false);
+  const isActivePlayer = useGameStore(
+    (s) => s.state?.players[s.state.activePlayerIndex]?.id === player.id,
+  );
+
   // Snap to the starting tile only once on mount. Subsequent position changes
   // are driven by the waypoint animation below — snapping here would teleport
   // the token to the destination and the hop would then animate backwards.
@@ -83,10 +92,18 @@ function PlayerToken({ player, slot, color }: { player: Player; slot: number; co
         ? { x: startPos.x, z: startPos.z, atCorner: false }
         : waypoints[0] ?? null;
       segmentStartRef.current = performance.now();
+      if (waypoints.length > 0) {
+        isAnimatingRef.current = true;
+        setMovingTokenPlayerId(player.id);
+        // Pan the camera toward the destination so the player can see where
+        // their token is heading. Only the active player's move pulls focus —
+        // others would be jarring.
+        if (isActivePlayer) focusCameraOnTile(player.position);
+      }
     }
 
     lastKnownPos.current = player.position;
-  }, [player.position, slot]);
+  }, [player.position, slot, player.id, setMovingTokenPlayerId, focusCameraOnTile, isActivePlayer]);
 
   // Trigger celebration when this player's owned-tiles count increases.
   // Under reduced-motion, skip the visual flourish entirely (the audio cue from
@@ -124,7 +141,12 @@ function PlayerToken({ player, slot, color }: { player: Player; slot: number; co
           path.shift();
           pathRef.current = path;
           segmentStartRef.current = performance.now();
-          if (path.length > 0) audio.play('hop');
+          if (path.length > 0) {
+            audio.play('hop');
+          } else if (isAnimatingRef.current) {
+            isAnimatingRef.current = false;
+            setMovingTokenPlayerId(null);
+          }
         }
       }
     }

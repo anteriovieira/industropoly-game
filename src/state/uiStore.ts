@@ -13,7 +13,16 @@ interface UiStore {
   mySeatIndex: number | null;
   setMySeatIndex: (i: number | null) => void;
   hoveredTile: number | null;
-  setHoveredTile: (tileId: number | null) => void;
+  // Sticky hover (set via tap on touch devices) — survives pointer-out so the
+  // tooltip stays open until the user taps elsewhere.
+  hoveredTileSticky: boolean;
+  // Cursor/touch position captured at the moment a sticky hover was opened.
+  // Used by the tooltip to anchor itself when no pointermove follows.
+  hoveredTilePointerPos: { x: number; y: number } | null;
+  setHoveredTile: (
+    tileId: number | null,
+    opts?: { sticky?: boolean; pointerPos?: { x: number; y: number } | null },
+  ) => void;
   shadowQuality: ShadowQuality;
   setShadowQuality: (q: ShadowQuality) => void;
   journalOpen: boolean;
@@ -35,6 +44,11 @@ interface UiStore {
   focusCameraOnTile: (tileId: number) => void;
   diceDragging: boolean;
   setDiceDragging: (dragging: boolean) => void;
+  // Set by Tokens.tsx while a player's token is hopping across tiles. The
+  // landing-modal scheduler in GameScreen waits for this to clear before
+  // dispatching RESOLVE_LANDING, so the modal never appears mid-animation.
+  movingTokenPlayerId: string | null;
+  setMovingTokenPlayerId: (id: string | null) => void;
   // Registered by OnlineGameContainer while mounted. Hud's quitGame calls this
   // in online mode so the container can close the room server-side, notify
   // guests via broadcast, and clean up local state.
@@ -52,7 +66,14 @@ export const useUiStore = create<UiStore>((set) => ({
   mySeatIndex: null,
   setMySeatIndex: (mySeatIndex) => set({ mySeatIndex }),
   hoveredTile: null,
-  setHoveredTile: (hoveredTile) => set({ hoveredTile }),
+  hoveredTileSticky: false,
+  hoveredTilePointerPos: null,
+  setHoveredTile: (hoveredTile, opts) =>
+    set({
+      hoveredTile,
+      hoveredTileSticky: hoveredTile == null ? false : opts?.sticky ?? false,
+      hoveredTilePointerPos: opts?.pointerPos ?? null,
+    }),
   shadowQuality: 'medium',
   setShadowQuality: (shadowQuality) => set({ shadowQuality }),
   journalOpen: false,
@@ -77,6 +98,8 @@ export const useUiStore = create<UiStore>((set) => ({
     set((s) => ({ cameraFocusTileId: tileId, cameraFocusNonce: s.cameraFocusNonce + 1 })),
   diceDragging: false,
   setDiceDragging: (diceDragging) => set({ diceDragging }),
+  movingTokenPlayerId: null,
+  setMovingTokenPlayerId: (movingTokenPlayerId) => set({ movingTokenPlayerId }),
   quitOnlineHandler: null,
   setQuitOnlineHandler: (quitOnlineHandler) => set({ quitOnlineHandler }),
 }));
